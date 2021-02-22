@@ -1,0 +1,34 @@
+{
+   "id": "kthb-libris-holdings",
+   "title": "Libris Holdings",
+   "description": "Libris Holdings",
+   "subtitle": "",
+   "author": "Thomas Lind, KTH Library",
+   "contentSecurity": {
+      "connectSrc": [
+         "self",
+         "localhost/",
+         "https://ref.lib.kth.se/",
+         "https://libris-qa.kb.se/",
+         "https://libris.kb.se/",
+         "https://api.exldevnetwork.net/"
+      ],
+      "sandbox": {
+         "popups": true,
+         "modals": true
+      }
+   },
+   "pages": {
+      "config": "/#/configuration",
+      "help": ""
+   },
+   "icon": {
+      "type": "url",
+      "value": "/assets/kb.png"
+   },
+   "fullscreen": {
+      "allow": true,
+      "open": false
+   },
+   "license": ""
+}

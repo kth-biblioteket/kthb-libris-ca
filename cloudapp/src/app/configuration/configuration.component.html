@@ -1,0 +1,39 @@
+<app-topmenu>
+    <div buttons>
+      <button mat-flat-button type="button" color="primary" (click)="openDialog()" [disabled]="dialogOpen">Add Sigel</button>
+      <button mat-flat-button type="button" color="primary" (click)="resetconfiguration()">Reset config</button>
+    </div>
+  </app-topmenu>
+    
+  <h3 class="subheading-1">Configured Sigels:</h3>
+  <div *ngIf="configuration && configuration.LibrisSigelTemplate.length>0">
+    <mat-list *ngFor="let item of configuration.LibrisSigelTemplate">
+      <mat-list-item>
+        <span>{{item.sigel}}, {{item.libraryname}}</span>
+        <mat-icon matListIcon (click)="remove(item)">delete</mat-icon>
+      </mat-list-item>
+    </mat-list>
+  </div>
+
+<ng-template>
+  <div id="emptyList">
+    <p>Add Sigel by clicking 'Add Sigel'-button.</p>
+  </div>
+</ng-template>
+
+<div buttons>
+    <button mat-flat-button type="button" color="primary" (click)="save()" [disabled]="!(form?.dirty)">Save</button>
+</div>
+<div class="loading-shade" *ngIf="saving">
+  <mat-progress-spinner mode="indeterminate" diameter="50"></mat-progress-spinner>
+ </div>
+<form [formGroup]="form">
+  <section class="config-section">
+    <mat-form-field>
+      <input matInput placeholder="Libris URL" formControlName="librisUrl">
+    </mat-form-field>
+    <mat-form-field>
+      <input matInput placeholder="Proxy URL" formControlName="proxyUrl">
+    </mat-form-field>  
+  </section>
+</form>
