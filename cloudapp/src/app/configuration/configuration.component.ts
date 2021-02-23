@@ -42,7 +42,7 @@ export class ConfigurationComponent implements OnInit {
 
   private getConfiguration() {
     this.configService.get().subscribe(result => {
-      if (!result.proxyUrl) {
+      if (!result.proxyUrl && !result.librisUrl && !result.LibrisSigelTemplate) {
         result = new Configuration();
       }
       this.configuration = result;
@@ -72,7 +72,7 @@ export class ConfigurationComponent implements OnInit {
     this.configuration.librisUrl = this.form.value.librisUrl
     this.configService.set(this.configuration).subscribe(
       () => {
-        this.alert.success('Configuration successfully saved.');
+        this.toastr.success('Configuration successfully saved.')
         this.form.markAsPristine();
       },
       err => this.alert.error(err.message),
@@ -83,7 +83,11 @@ export class ConfigurationComponent implements OnInit {
   resetconfiguration() {
     this.configService.set([]).subscribe(
       () => {
-        this.alert.success('Configuration successfully reset.');
+        this.toastr.success('Configuration successfully reset.')
+        this.configuration.proxyUrl = "";
+        this.configuration.librisUrl = "";
+        this.configuration.LibrisSigelTemplate = [];
+        this.form.reset()
         this.form.markAsPristine();
       },
       err => this.alert.error(err.message),

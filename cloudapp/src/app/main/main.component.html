@@ -51,3 +51,6 @@
 <div *ngIf="!hasAlmaApiResult">
     <i class="material-icons md-30">error</i> Gå till titel/titlar för att se bestånd i Libris.
 </div>
+<div *ngIf="configmissing">
+    <i class="material-icons md-30 icon-red">error</i> App not configured properly, please contact your administrator.
+</div>

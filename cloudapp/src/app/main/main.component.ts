@@ -23,6 +23,7 @@ export class MainComponent implements OnInit, OnDestroy {
   pageEntities: Entity[];
   hasAlmaApiResult: boolean = false;
   config: any;
+  configmissing: boolean = false;
   sigels: any;
   authToken: string;
   numberofAlmaItems: any;
@@ -42,10 +43,15 @@ export class MainComponent implements OnInit, OnDestroy {
     this.eventsService.getAuthToken().subscribe(authToken => this.authToken = authToken);
     this.configService.get().pipe(
       map(conf=>{
-        this.config = conf;
-        this.sigels = this.config.LibrisSigelTemplate;            
-        this.setLang("sv");
-        this.pageLoad()
+        if (!conf.librisUrl || !conf.LibrisSigelTemplate) {
+          this.configmissing = true
+          this.toastr.error("App not configured properly, please contact your administrator.")
+        } else {
+          this.config = conf;
+          this.sigels = this.config.LibrisSigelTemplate;            
+          this.setLang("sv");
+          this.pageLoad()
+        }
       })
     ).subscribe()
   }
@@ -126,8 +132,12 @@ export class MainComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.pageLoad$.unsubscribe();
-    this.subscription$.unsubscribe();
+    if(this.pageLoad$) {
+      this.pageLoad$.unsubscribe();
+    }
+    if(this.subscription$) {
+      this.subscription$.unsubscribe();
+    }
   }
 
   setLang(lang: string) {
