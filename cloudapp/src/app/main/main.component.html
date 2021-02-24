@@ -19,7 +19,7 @@
                     </mat-card-title>
                 </mat-card-header>
                 <mat-card-content *ngIf="!librisitem.librisinstance">
-                    Hittade ingen titel i Libris
+                    {{librisitem.errormessage}}
                 </mat-card-content>  
                 <mat-card-content *ngIf="librisitem.librisholdings.length > 0 && librisitem.librisinstance">
                     <div *ngFor="let librisholding of librisitem.librisholdings">
@@ -30,27 +30,27 @@
                         </div>
                         <div *ngIf="librisholding.shelves" style="padding-left: 10px; padding-bottom: 10px">
                             <div *ngFor="let shelve of librisholding.shelves">
-                                <strong>PLACERING: </strong>{{shelve.name}}
+                                <strong translate>Translate.placementtext </strong>{{shelve.name}}
                             </div>
                         </div>
                         <div *ngIf="librisholding.otherinfo" style="padding-left: 10px; padding-bottom: 10px">
-                            <strong>ÖVRIG BESTÅNDSINFO: </strong>{{librisholding.otherinfo}}
+                            <strong translate>Translate.otherinfotext</strong>{{librisholding.otherinfo}}
                         </div>
                         <div *ngIf="librisholding.link != '#'" style="padding-left: 10px; padding-bottom: 10px">
-                            <a href="{{librisholding.link}}" target="_blank">Beståndspost i Libris katalogisering <i class="material-icons md-14">launch</i></a>
+                            <a href="{{librisholding.link}}" target="_blank" translate>Translate.librisholdingslinktext <i class="material-icons md-14">launch</i></a>
                         </div>
                     </div>
                 </mat-card-content>
                 <mat-card-content *ngIf="librisitem.librisholdings.length == 0 && librisitem.librisinstance">
-                        <i class="material-icons md-30 icon-red">error</i> Hittade inget i bestånd Libris!
+                        <i class="material-icons md-30 icon-red">error</i> {{librisitem.errormessage}}
                 </mat-card-content>
             </mat-card>
         </div>
     </div>
 </div>
 <div *ngIf="!hasAlmaApiResult">
-    <i class="material-icons md-30">error</i> Gå till titel/titlar för att se bestånd i Libris.
+    <i class="material-icons md-30">error</i><span translate>Translate.notitlesinfo</span>
 </div>
 <div *ngIf="configmissing">
-    <i class="material-icons md-30 icon-red">error</i> App not configured properly, please contact your administrator.
+    <i class="material-icons md-30 icon-red">error</i> <span translate>Translate.noconfiginfo</span>
 </div>

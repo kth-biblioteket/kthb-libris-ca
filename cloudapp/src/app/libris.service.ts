@@ -1,11 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from "@angular/common/http";
 import { catchError } from 'rxjs/operators'; 
+import { TranslateService } from '@ngx-translate/core';
 
 @Injectable()
 export class LibrisService {
     constructor (
-        private http: HttpClient
+        private http: HttpClient,
+        private translate: TranslateService,
     ) {}
 
     sort_by_key(array, key) {
@@ -96,10 +98,11 @@ export class LibrisService {
       */
     async getLibrisItem(librisobject, bib, index, sigels) {
         let title: string = ""
-        let lastslash: string = ""
+        let librisinstance: boolean = false;
         let librisinstancelink: string = "#"
         let librisholdings: any;
-        let librisinstance: boolean = false;
+        let errormessage: string;
+        let lastslash: string = ""
         let holdingsindex: number;
         let sigelmatch: boolean = false
         let librisresult: any;
@@ -141,6 +144,9 @@ export class LibrisService {
                             for (let k=0;k<librisresult.mainEntity.hasComponent.length;k++) {
                                 tempstringarr = []
                                 shelves[k] = {}
+                                if (librisresult.mainEntity.hasComponent[k].physicalLocation) {
+                                    tempstringarr.push(librisresult.mainEntity.hasComponent[k].physicalLocation[0])
+                                }
                                 if (librisresult.mainEntity.hasComponent[k].shelfMark) {
                                     tempstringarr.push(librisresult.mainEntity.hasComponent[k].shelfMark.label)
                                 }
@@ -173,6 +179,9 @@ export class LibrisService {
                             if (librisresult.mainEntity.shelfLabel) {
                                 tempstringarr.push(librisresult.mainEntity.shelfLabel)
                             }
+                            if (librisresult.mainEntity.copyNumber) {
+                                tempstringarr.push(librisresult.mainEntity.copyNumber)
+                            }
                             if(tempstringarr.length == 0) {
                                 tempstringarr.push("Saknas")
                             }
@@ -196,21 +205,25 @@ export class LibrisService {
                     }
                 }
                 if (!sigelmatch) {
-                    librisholdings=[]
+                    librisholdings=[];
+                    errormessage = this.translate.instant('Translate.noholdingsfound');
                 }
                 break;
             }
         }
         if (!librisinstance) {
-            librisholdings=[]
+            librisholdings=[];
+            errormessage = this.translate.instant('Translate.notitlefound');
         }
+
         librisholdings = this.sort_by_key(librisholdings,"sigel")
         librisitem = { 
             "index": index,
             "title": title,
             "librisinstance": librisinstance,
             "librisinstancelink": librisinstancelink,
-            "librisholdings": librisholdings
+            "librisholdings": librisholdings,
+            "errormessage": errormessage
         }
         return librisitem
     }

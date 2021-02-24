@@ -45,11 +45,10 @@ export class MainComponent implements OnInit, OnDestroy {
       map(conf=>{
         if (!conf.librisUrl || !conf.LibrisSigelTemplate) {
           this.configmissing = true
-          this.toastr.error("App not configured properly, please contact your administrator.")
+          this.toastr.error(this.translate.instant('Translate.noconfiginfo'))
         } else {
           this.config = conf;
-          this.sigels = this.config.LibrisSigelTemplate;            
-          this.setLang("sv");
+          this.sigels = this.config.LibrisSigelTemplate;
           this.pageLoad()
         }
       })
@@ -96,36 +95,52 @@ export class MainComponent implements OnInit, OnDestroy {
           entities = this.pageEntities
         }
         for(const bib of bibdata) {
-          const librisarr = this.librisservice.getLibrisType(bib.network_number)
-          this.librisservice.getLibrisInstance(librisarr[0], librisarr[1], this.config.librisUrl).pipe(
-            map(async lib=>{
-              if(type == "ITEM"){
-                index = 0 
-              } else {
-                index = entities.findIndex(obj => obj.id==bib.mms_id)
-              }
-              this.librisitems[index] = await this.librisservice.getLibrisItem(lib, bib, index, this.sigels)
-              this.nrofLibrisItemsReceived++;
-              if (this.nrofLibrisItemsReceived >= entities.length) {
-                this.hasLibrisResult = true;
-              } 
-            }),
-            catchError(err => {
-              this.librisitems[entities.findIndex(obj => obj.id==bib.mms_id)] = {
-                "index": entities.findIndex(obj => obj.id==bib.mms_id),
-                "title": bib.title + "\n" + err.message,
-                "librisinstance": false,
-                "librisinstancelink": "#",
-                "librisholdings": []
-              }
-              this.nrofLibrisItemsReceived++;
-              if (this.nrofLibrisItemsReceived >= entities.length) {
-                this.hasLibrisResult = true;
-              }
-              return throwError(err);
-            })
-          )
-          .subscribe()
+          if (bib.network_number) {
+            const librisarr = this.librisservice.getLibrisType(bib.network_number)
+            this.librisservice.getLibrisInstance(librisarr[0], librisarr[1], this.config.librisUrl).pipe(
+              map(async lib=>{
+                if(type == "ITEM"){
+                  index = 0 
+                } else {
+                  index = entities.findIndex(obj => obj.id==bib.mms_id)
+                }
+                this.librisitems[index] = await this.librisservice.getLibrisItem(lib, bib, index, this.sigels)
+                this.nrofLibrisItemsReceived++;
+                if (this.nrofLibrisItemsReceived >= entities.length) {
+                  this.hasLibrisResult = true;
+                } 
+              }),
+              catchError(err => {
+                this.librisitems[entities.findIndex(obj => obj.id==bib.mms_id)] = {
+                  "index": entities.findIndex(obj => obj.id==bib.mms_id),
+                  "title": bib.title,
+                  "librisinstance": false,
+                  "librisinstancelink": "#",
+                  "librisholdings": [],
+                  "errormessage": err.message
+                }
+                this.nrofLibrisItemsReceived++;
+                if (this.nrofLibrisItemsReceived >= entities.length) {
+                  this.hasLibrisResult = true;
+                }
+                return throwError(err);
+              })
+            )
+            .subscribe()
+          } else {
+            this.librisitems[entities.findIndex(obj => obj.id==bib.mms_id)] = {
+              "index": entities.findIndex(obj => obj.id==bib.mms_id),
+              "title": bib.title,
+              "librisinstance": false,
+              "librisinstancelink": "#",
+              "librisholdings": [],
+              "errormessage": this.translate.instant('Translate.nonetworknumberfound')
+            }
+            this.nrofLibrisItemsReceived++;
+            if (this.nrofLibrisItemsReceived >= entities.length) {
+              this.hasLibrisResult = true;
+            }
+          }
         }
       })
     )
