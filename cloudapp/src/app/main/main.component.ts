@@ -59,7 +59,7 @@ export class MainComponent implements OnInit, OnDestroy {
     this.hasAlmaApiResult = false
     this.pageLoad$ = this.eventsService.onPageLoad(async pageInfo => { 
       const entities = (pageInfo.entities||[])
-      if (entities.length > 0) {
+      if (entities.length > 0 && (entities[0].type == "BIB_MMS" || entities[0].type == "ITEM")) {
         if(this.subscription$) {
           this.subscription$.unsubscribe();
         }
