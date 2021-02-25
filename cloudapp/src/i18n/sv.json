@@ -3,6 +3,14 @@
         "Title": "Libris Bestånd",
         "Handling": "Hanterar poster",
         "Allhandled": "Alla poster hanterade",
-        "Intro": "Nedan visas bestånd i Libris samt länk till beståndspost i Libris för aktuell titel"
+        "Intro": "Nedan visas bestånd i Libris samt länk till beståndspost i Libris för aktuell titel",
+        "librisholdingslinktext" : "Beståndspost i Libris katalogisering",
+        "placementtext" : "PLACERING:",
+        "otherinfotext" : "ÖVRIG BESTÅNDSINFO:",
+        "notitlesinfo": "Gå till titel/titlar för att se bestånd i Libris.",
+        "noconfiginfo": "Appen är inte korrekt konfigurerad, kontakta administratör",
+        "notitlefound": "Ingen titel hittades i Libris",
+        "noholdingsfound": "Ingen beståndspost hittades i Libris",
+        "nonetworknumberfound": "Inget network number(035) hittades"
     }
 }

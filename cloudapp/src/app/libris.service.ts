@@ -1,11 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from "@angular/common/http";
 import { catchError } from 'rxjs/operators'; 
+import { TranslateService } from '@ngx-translate/core';
 
 @Injectable()
 export class LibrisService {
     constructor (
-        private http: HttpClient
+        private http: HttpClient,
+        private translate: TranslateService,
     ) {}
 
     sort_by_key(array, key) {
@@ -99,7 +101,7 @@ export class LibrisService {
         let librisinstance: boolean = false;
         let librisinstancelink: string = "#"
         let librisholdings: any;
-        let errormessage: string = ""
+        let errormessage: string;
         let holdingsindex: number;
         let lastslash: string = ""
         let sigelmatch: boolean = false
@@ -177,6 +179,9 @@ export class LibrisService {
                             if (librisresult.mainEntity.shelfLabel) {
                                 tempstringarr.push(librisresult.mainEntity.shelfLabel)
                             }
+                            if (librisresult.mainEntity.copyNumber) {
+                                tempstringarr.push(librisresult.mainEntity.copyNumber)
+                            }
                             if(tempstringarr.length == 0) {
                                 tempstringarr.push("Saknas")
                             }
@@ -201,15 +206,16 @@ export class LibrisService {
                 }
                 if (!sigelmatch) {
                     librisholdings=[];
-                    errormessage = "Hittade inget i bestånd Libris!"
+                    errormessage = this.translate.instant('Translate.noholdingsfound');
                 }
                 break;
             }
         }
         if (!librisinstance) {
-            librisholdings=[]
-            errormessage = "Hittade ingen titel Libris!"
+            librisholdings=[];
+            errormessage = this.translate.instant('Translate.notitlefound');
         }
+
         librisholdings = this.sort_by_key(librisholdings,"sigel")
         librisitem = { 
             "index": index,

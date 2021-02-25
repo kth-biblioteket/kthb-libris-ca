@@ -45,11 +45,10 @@ export class MainComponent implements OnInit, OnDestroy {
       map(conf=>{
         if (!conf.librisUrl || !conf.LibrisSigelTemplate) {
           this.configmissing = true
-          this.toastr.error("App not configured properly, please contact your administrator.")
+          this.toastr.error(this.translate.instant('Translate.noconfiginfo'))
         } else {
           this.config = conf;
-          this.sigels = this.config.LibrisSigelTemplate;            
-          this.setLang("sv");
+          this.sigels = this.config.LibrisSigelTemplate;
           this.pageLoad()
         }
       })
@@ -60,7 +59,7 @@ export class MainComponent implements OnInit, OnDestroy {
     this.hasAlmaApiResult = false
     this.pageLoad$ = this.eventsService.onPageLoad(async pageInfo => { 
       const entities = (pageInfo.entities||[])
-      if (entities.length > 0) {
+      if (entities.length > 0 && (entities[0].type == "BIB_MMS" || entities[0].type == "ITEM")) {
         if(this.subscription$) {
           this.subscription$.unsubscribe();
         }
@@ -115,7 +114,7 @@ export class MainComponent implements OnInit, OnDestroy {
               catchError(err => {
                 this.librisitems[entities.findIndex(obj => obj.id==bib.mms_id)] = {
                   "index": entities.findIndex(obj => obj.id==bib.mms_id),
-                  "title": bib.title + "\n" + err.message,
+                  "title": bib.title,
                   "librisinstance": false,
                   "librisinstancelink": "#",
                   "librisholdings": [],
@@ -132,11 +131,11 @@ export class MainComponent implements OnInit, OnDestroy {
           } else {
             this.librisitems[entities.findIndex(obj => obj.id==bib.mms_id)] = {
               "index": entities.findIndex(obj => obj.id==bib.mms_id),
-              "title": bib.title + "\n",
+              "title": bib.title,
               "librisinstance": false,
               "librisinstancelink": "#",
               "librisholdings": [],
-              "errormessage":"Network number(035) saknas!"
+              "errormessage": this.translate.instant('Translate.nonetworknumberfound')
             }
             this.nrofLibrisItemsReceived++;
             if (this.nrofLibrisItemsReceived >= entities.length) {

@@ -14,6 +14,7 @@ import { TopmenuComponent } from './topmenu/topmenu.component';
 import { ConfigurationComponent } from './configuration/configuration.component';
 import { ErrorComponent } from './static/error.component';
 import { ConfigurationDialogComponent } from './configuration/configuration-dialog/configuration-dialog.component';
+import { HelpComponent } from './help/help.component';
 
 import { HelpComponent } from './help/help.component';
 
