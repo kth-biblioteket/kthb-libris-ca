@@ -1,7 +1,7 @@
 {
    "id": "kthb-libris-holdings",
    "title": "Libris Holdings",
-   "description": "Libris Holdings",
+   "description": "This app is applicable for the Swedish libraries. It show the Libris Holdings for each item in Alma. This is a Beta version!",
    "subtitle": "",
    "author": "Thomas Lind, KTH Library",
    "contentSecurity": {
