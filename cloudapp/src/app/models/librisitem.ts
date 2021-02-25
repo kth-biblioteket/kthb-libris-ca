@@ -4,6 +4,7 @@ export interface LibrisItem {
     librisinstance: boolean;
     librisinstancelink: string;
     librisholdings: LibrisHolding[];
+    errormessage: string;
 }
 
 export interface LibrisHolding {

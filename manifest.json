@@ -20,7 +20,7 @@
    },
    "pages": {
       "config": "/#/configuration",
-      "help": ""
+      "help": "/#/help"
    },
    "icon": {
       "type": "url",

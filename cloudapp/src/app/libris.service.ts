@@ -96,11 +96,12 @@ export class LibrisService {
       */
     async getLibrisItem(librisobject, bib, index, sigels) {
         let title: string = ""
-        let lastslash: string = ""
+        let librisinstance: boolean = false;
         let librisinstancelink: string = "#"
         let librisholdings: any;
-        let librisinstance: boolean = false;
+        let errormessage: string = ""
         let holdingsindex: number;
+        let lastslash: string = ""
         let sigelmatch: boolean = false
         let librisresult: any;
         let librisholdingslink: string;
@@ -141,6 +142,9 @@ export class LibrisService {
                             for (let k=0;k<librisresult.mainEntity.hasComponent.length;k++) {
                                 tempstringarr = []
                                 shelves[k] = {}
+                                if (librisresult.mainEntity.hasComponent[k].physicalLocation) {
+                                    tempstringarr.push(librisresult.mainEntity.hasComponent[k].physicalLocation[0])
+                                }
                                 if (librisresult.mainEntity.hasComponent[k].shelfMark) {
                                     tempstringarr.push(librisresult.mainEntity.hasComponent[k].shelfMark.label)
                                 }
@@ -196,13 +200,15 @@ export class LibrisService {
                     }
                 }
                 if (!sigelmatch) {
-                    librisholdings=[]
+                    librisholdings=[];
+                    errormessage = "Hittade inget i bestånd Libris!"
                 }
                 break;
             }
         }
         if (!librisinstance) {
             librisholdings=[]
+            errormessage = "Hittade ingen titel Libris!"
         }
         librisholdings = this.sort_by_key(librisholdings,"sigel")
         librisitem = { 
@@ -210,7 +216,8 @@ export class LibrisService {
             "title": title,
             "librisinstance": librisinstance,
             "librisinstancelink": librisinstancelink,
-            "librisholdings": librisholdings
+            "librisholdings": librisholdings,
+            "errormessage": errormessage
         }
         return librisitem
     }

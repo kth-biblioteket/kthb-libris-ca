@@ -15,6 +15,8 @@ import { ConfigurationComponent } from './configuration/configuration.component'
 import { ErrorComponent } from './static/error.component';
 import { ConfigurationDialogComponent } from './configuration/configuration-dialog/configuration-dialog.component';
 
+import { HelpComponent } from './help/help.component';
+
 import { LibrisService } from './libris.service';
 
 export function getToastrModule() {
@@ -31,7 +33,8 @@ export function getToastrModule() {
     TopmenuComponent,
     ConfigurationComponent,
     ErrorComponent,
-    ConfigurationDialogComponent
+    ConfigurationDialogComponent,
+    HelpComponent
   ],
   imports: [
     MaterialModule,
