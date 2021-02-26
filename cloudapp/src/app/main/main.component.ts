@@ -45,7 +45,7 @@ export class MainComponent implements OnInit, OnDestroy {
       map(conf=>{
         if (!conf.librisUrl || !conf.LibrisSigelTemplate) {
           this.configmissing = true
-          this.toastr.error("App not configured properly, please contact your administrator.")
+          this.toastr.error(this.translate.instant('Translate.noconfiginfo'))
         } else {
           this.config = conf;
           this.sigels = this.config.LibrisSigelTemplate;            

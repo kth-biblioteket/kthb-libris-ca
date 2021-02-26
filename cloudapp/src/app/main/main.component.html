@@ -37,7 +37,7 @@
                             <strong>ÖVRIG BESTÅNDSINFO: </strong>{{librisholding.otherinfo}}
                         </div>
                         <div *ngIf="librisholding.link != '#'" style="padding-left: 10px; padding-bottom: 10px">
-                            <a href="{{librisholding.link}}" target="_blank">Beståndspost i Libris katalogisering <i class="material-icons md-14">launch</i></a>
+                            <a href="{{librisholding.link}}" target="_blank" translate>Translate.librisholdingslinktext <i class="material-icons md-14">launch</i></a>
                         </div>
                     </div>
                 </mat-card-content>
@@ -52,5 +52,5 @@
     <i class="material-icons md-30">error</i> Gå till titel/titlar för att se bestånd i Libris.
 </div>
 <div *ngIf="configmissing">
-    <i class="material-icons md-30 icon-red">error</i> App not configured properly, please contact your administrator.
+    <i class="material-icons md-30 icon-red">error</i> <span translate>Translate.noconfiginfo</span>
 </div>
