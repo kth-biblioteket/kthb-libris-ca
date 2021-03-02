@@ -98,40 +98,58 @@ export class MainComponent implements OnInit, OnDestroy {
         for(const bib of bibdata) {
           if (bib.network_number) {
             const librisarr = this.librisservice.getLibrisType(bib.network_number)
-            this.librisservice.getLibrisInstance(librisarr[0], librisarr[1], this.config.librisUrl).pipe(
-              map(async lib=>{
-                if(type == "ITEM"){
-                  index = 0 
-                } else {
-                  index = entities.findIndex(obj => obj.id==bib.mms_id)
-                }
-                this.librisitems[index] = await this.librisservice.getLibrisItem(lib, bib, index, this.sigels)
-                this.nrofLibrisItemsReceived++;
-                if (this.nrofLibrisItemsReceived >= entities.length) {
-                  this.hasLibrisResult = true;
-                } 
-              }),
-              catchError(err => {
-                this.librisitems[entities.findIndex(obj => obj.id==bib.mms_id)] = {
-                  "index": entities.findIndex(obj => obj.id==bib.mms_id),
-                  "title": bib.title,
-                  "librisinstance": false,
-                  "librisinstancelink": "#",
-                  "librisholdings": [],
-                  "errormessage": err.message
-                }
-                this.nrofLibrisItemsReceived++;
-                if (this.nrofLibrisItemsReceived >= entities.length) {
-                  this.hasLibrisResult = true;
-                }
-                return throwError(err);
-              })
-            )
-            .subscribe()
+            if (librisarr[0]!="") {
+              this.librisservice.getLibrisInstance(librisarr[0], librisarr[1], this.config.librisUrl).pipe(
+                map(async lib=>{
+                  if(type == "ITEM"){
+                    index = 0 
+                  } else {
+                    index = entities.findIndex(obj => obj.id==bib.mms_id)
+                  }
+                  this.librisitems[index] = await this.librisservice.getLibrisItem(lib, librisarr[0], bib, index, this.sigels)
+                  this.nrofLibrisItemsReceived++;
+                  if (this.nrofLibrisItemsReceived >= entities.length) {
+                    this.hasLibrisResult = true;
+                  } 
+                }),
+                catchError(err => {
+                  this.librisitems[entities.findIndex(obj => obj.id==bib.mms_id)] = {
+                    "index": entities.findIndex(obj => obj.id==bib.mms_id),
+                    "title": bib.title,
+                    "librisid": librisarr[0],
+                    "librisinstance": false,
+                    "librisinstancelink": "#",
+                    "librisholdings": [],
+                    "errormessage": err.message
+                  }
+                  this.nrofLibrisItemsReceived++;
+                  if (this.nrofLibrisItemsReceived >= entities.length) {
+                    this.hasLibrisResult = true;
+                  }
+                  return throwError(err);
+                })
+              )
+              .subscribe()
+            } else {
+              this.librisitems[entities.findIndex(obj => obj.id==bib.mms_id)] = {
+                "index": entities.findIndex(obj => obj.id==bib.mms_id),
+                "title": bib.title,
+                "librisid": "Missing",
+                "librisinstance": false,
+                "librisinstancelink": "#",
+                "librisholdings": [],
+                "errormessage": this.translate.instant('Translate.nonetworknumbercriteriafound')
+              }
+              this.nrofLibrisItemsReceived++;
+              if (this.nrofLibrisItemsReceived >= entities.length) {
+                this.hasLibrisResult = true;
+              }
+            }
           } else {
             this.librisitems[entities.findIndex(obj => obj.id==bib.mms_id)] = {
               "index": entities.findIndex(obj => obj.id==bib.mms_id),
               "title": bib.title,
+              "librisid": "Missing",
               "librisinstance": false,
               "librisinstancelink": "#",
               "librisholdings": [],

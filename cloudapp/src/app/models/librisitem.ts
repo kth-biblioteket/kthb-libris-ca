@@ -1,6 +1,7 @@
 export interface LibrisItem { 
     index: number;
     title: string;
+    librisid: string;
     librisinstance: boolean;
     librisinstancelink: string;
     librisholdings: LibrisHolding[];

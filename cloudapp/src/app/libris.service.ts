@@ -96,7 +96,7 @@ export class LibrisService {
       * @param index 
       * @param sigelarray 
       */
-    async getLibrisItem(librisobject, bib, index, sigels) {
+    async getLibrisItem(librisobject, librisid, bib, index, sigels) {
         let title: string = ""
         let librisinstance: boolean = false;
         let librisinstancelink: string = "#"
@@ -109,7 +109,6 @@ export class LibrisService {
         let librisholdingslink: string;
         let shelves: any;
         let librisitem: any;
-    
         if(bib.title) {
             title = bib.title;
         }
@@ -220,6 +219,7 @@ export class LibrisService {
         librisitem = { 
             "index": index,
             "title": title,
+            "librisid": librisid,
             "librisinstance": librisinstance,
             "librisinstancelink": librisinstancelink,
             "librisholdings": librisholdings,
