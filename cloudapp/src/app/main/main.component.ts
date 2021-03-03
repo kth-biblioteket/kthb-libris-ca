@@ -134,11 +134,11 @@ export class MainComponent implements OnInit, OnDestroy {
               this.librisitems[entities.findIndex(obj => obj.id==bib.mms_id)] = {
                 "index": entities.findIndex(obj => obj.id==bib.mms_id),
                 "title": bib.title,
-                "librisid": "Missing",
+                "librisid": librisarr[0],
                 "librisinstance": false,
                 "librisinstancelink": "#",
                 "librisholdings": [],
-                "errormessage": this.translate.instant('Translate.nonetworknumbercriteriafound')
+                "errormessage": this.translate.instant('Translate.nonetworknumberfound')
               }
               this.nrofLibrisItemsReceived++;
               if (this.nrofLibrisItemsReceived >= entities.length) {
@@ -149,7 +149,7 @@ export class MainComponent implements OnInit, OnDestroy {
             this.librisitems[entities.findIndex(obj => obj.id==bib.mms_id)] = {
               "index": entities.findIndex(obj => obj.id==bib.mms_id),
               "title": bib.title,
-              "librisid": "Missing",
+              "librisid": "",
               "librisinstance": false,
               "librisinstancelink": "#",
               "librisholdings": [],

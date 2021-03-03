@@ -4,14 +4,14 @@
         "Handling": "Handling posts",
         "Allhandled": "All posts handled",
         "Intro": "Below is showing Libris holdings and a link to the holdings in Libris for the current title",
+        "idlabel": "Holdings for ID",
         "librisholdingslinktext" : "Holdings in Libris cataloguing",
-        "placementtext" : "Location:",
+        "locationtext" : "Location:",
         "otherinfotext" : "Other Holdingsinfo:",
         "notitlesinfo": "Search title/titles to see Libris Holdings.",
         "noconfiginfo": "App not configured properly, please contact your administrator.",
-        "notitlefound": "No title was found in Libris",
-        "noholdingsfound": "No holdings were found in Libris",
-        "nonetworknumberfound": "No network number(035) was found",
-        "nonetworknumbercriteriafound": "No network number(035) was found that satisfies the critera for searching in Libris"
+        "notitlefound": "No match for the ID from the Alma record",
+        "noholdingsfound": "No holdings were found for the configured sigels",
+        "nonetworknumberfound": "No Libris ID found in Alma record."
     }
 }

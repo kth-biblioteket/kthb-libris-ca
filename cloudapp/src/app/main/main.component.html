@@ -18,8 +18,8 @@
                         <a href="{{librisitem.librisinstancelink}}" target="_blank">{{librisitem.index + 1}}. {{librisitem.title}} <i class="material-icons md-14">launch</i></a>
                     </mat-card-title>
                 </mat-card-header>
-                <mat-card-content>
-                    ID: {{librisitem.librisid}}
+                <mat-card-content *ngIf="librisitem.librisid !=''">
+                    <i><span translate>Translate.idlabel</span> {{librisitem.librisid}}</i>
                 </mat-card-content>
                 <mat-card-content *ngIf="!librisitem.librisinstance">
                     {{librisitem.errormessage}}
@@ -31,15 +31,15 @@
                                 <h3>{{sigel.value.libraryname}} ({{sigel.value.sigel}})</h3>
                             </div>
                         </div>
-                        <div *ngIf="librisholding.shelves" style="padding-left: 10px; padding-bottom: 10px">
+                        <div *ngIf="librisholding.shelves" style="padding-left: 0px; padding-bottom: 10px">
                             <div *ngFor="let shelve of librisholding.shelves">
-                                <strong translate>Translate.placementtext </strong>{{shelve.name}}
+                                <i translate>Translate.locationtext </i>{{shelve.name}}
                             </div>
                         </div>
-                        <div *ngIf="librisholding.otherinfo" style="padding-left: 10px; padding-bottom: 10px">
-                            <strong translate>Translate.otherinfotext </strong>{{librisholding.otherinfo}}
+                        <div *ngIf="librisholding.otherinfo" style="padding-left: 0px; padding-bottom: 10px">
+                            <i translate>Translate.otherinfotext </i>{{librisholding.otherinfo}}
                         </div>
-                        <div *ngIf="librisholding.link != '#'" style="padding-left: 10px; padding-bottom: 10px">
+                        <div *ngIf="librisholding.link != '#'" style="padding-left: 0px; padding-bottom: 10px">
                             <a href="{{librisholding.link}}" target="_blank" translate>Translate.librisholdingslinktext <i class="material-icons md-14">launch</i></a>
                         </div>
                     </div>

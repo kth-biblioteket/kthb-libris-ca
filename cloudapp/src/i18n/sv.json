@@ -4,14 +4,14 @@
         "Handling": "Hanterar poster",
         "Allhandled": "Alla poster hanterade",
         "Intro": "Nedan visas bestånd i Libris samt länk till beståndspost i Libris för aktuell titel",
+        "idlabel": "Bestånd för ID",
         "librisholdingslinktext" : "Beståndspost i Libris katalogisering",
-        "placementtext" : "Placering:",
+        "locationtext" : "Placering:",
         "otherinfotext" : "Övrig Beståndsinfo:",
         "notitlesinfo": "Gå till titel/titlar för att se bestånd i Libris.",
         "noconfiginfo": "Appen är inte korrekt konfigurerad, kontakta administratör",
-        "notitlefound": "Ingen titel hittades i Libris",
-        "noholdingsfound": "Ingen beståndspost hittades i Libris",
-        "nonetworknumberfound": "Det finns inget network number(035) registerat i Alma",
-        "nonetworknumbercriteriafound": "Det finns inget network number som uppfyller kriterierna för att söka i Libris"
+        "notitlefound": "Ingen träff för ID:t från posten i Alma",
+        "noholdingsfound": "Inget bestånd hittades för de sigel som är konfigurerade",
+        "nonetworknumberfound": "Inget Libris ID hittades på posten i Alma."
     }
 }

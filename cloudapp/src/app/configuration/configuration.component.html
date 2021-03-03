@@ -4,7 +4,11 @@
     <button mat-flat-button type="button" color="primary" (click)="resetconfiguration()">Reset config</button>
   </div>
 </app-topmenu>
-  
+
+<div *ngIf="loading">
+    <mat-progress-spinner mode="indeterminate" diameter="50"></mat-progress-spinner>
+</div>
+
 <h3 class="subheading-1">Configured Sigels:</h3>
 <div *ngIf="configuration && configuration.LibrisSigelTemplate.length>0">
   <mat-list *ngFor="let item of configuration.LibrisSigelTemplate">

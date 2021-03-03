@@ -1,7 +1,12 @@
 import { Component, OnInit, Injectable } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { CloudAppConfigService, CloudAppEventsService, CloudAppRestService, InitData, AlertService } from '@exlibris/exl-cloudapp-angular-lib';
-import { CanActivate, Router } from '@angular/router';
+import { CanActivate, Router, 
+  Event as RouterEvent,
+  NavigationStart,
+  NavigationEnd,
+  NavigationCancel,
+  NavigationError } from '@angular/router';
 import { Observable, iif, of } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
 import { ErrorMessages } from '../static/error.component';
@@ -23,16 +28,45 @@ export class ConfigurationComponent implements OnInit {
   dialogOpen: boolean = false;
   form: FormGroup;
   sigelform: FormGroup;
+  loading: boolean = true;
   
   constructor(
     private fb: FormBuilder,
     private configService: CloudAppConfigService,
     private toastr: ToastrService,
     private alert: AlertService,
-    public dialog: MatDialog
-  ) { }
+    public dialog: MatDialog,
+    private router: Router
+  ) {
+    this.router.events.subscribe((e : RouterEvent) => {
+      this.navigationInterceptor(e);
+    })
+   }
+  
+  // Shows and hides the loading spinner during RouterEvent changes
+  navigationInterceptor(event: RouterEvent): void {
+    if (event instanceof NavigationStart) {
+      this.loading = true
+      console.log("NavigationStart")
+    }
+    if (event instanceof NavigationEnd) {
+      this.loading = false
+      console.log("NavigationEnd")
+    }
+
+    // Set loading state to false in both of the below events to hide the spinner in case a request fails
+    if (event instanceof NavigationCancel) {
+      this.loading = false
+      console.log("NavigationCancel")
+    }
+    if (event instanceof NavigationError) {
+      this.loading = false
+      console.log("NavigationError")
+    }
+  }
 
   ngOnInit() {
+    this.loading = true
     this.form = this.fb.group({
       proxyUrl: this.fb.control(''),
       librisUrl: this.fb.control('')
@@ -49,8 +83,9 @@ export class ConfigurationComponent implements OnInit {
       this.configService.getAsFormGroup().subscribe( config => {
         if (Object.keys(config.value).length!=0) {
           this.form = config;
+          this.loading = false  
         }
-      });   
+      });
     })
   }
 
