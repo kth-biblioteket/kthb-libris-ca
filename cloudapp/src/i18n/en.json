@@ -1,8 +1,8 @@
 {
     "Translate": {
         "Title": "Libris Holdings",
-        "Handling": "Handling posts",
-        "Allhandled": "All posts handled",
+        "Handling": "Handling records",
+        "Allhandled": "All records handled",
         "Intro": "For the current view of bibliographic records (print), the corresponding holdings from Libris are displayed.",
         "idlabel": "Holdings for ID",
         "librisholdingslinktext" : "Holdings in Libris cataloguing",
