@@ -3,7 +3,7 @@
         "Title": "Libris Bestånd",
         "Handling": "Hanterar poster",
         "Allhandled": "Alla poster hanterade",
-        "Intro": "Nedan visas bestånd i Libris samt länk till beståndspost i Libris för aktuell titel",
+        "Intro": "För aktuell vy med bibliografiska poster (tryckt material) visas motsvarande bestånd från Libris.",
         "idlabel": "Bestånd för ID",
         "librisholdingslinktext" : "Beståndspost i Libris katalogisering",
         "locationtext" : "Placering:",
