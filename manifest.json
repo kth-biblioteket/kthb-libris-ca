@@ -2,7 +2,7 @@
    "id": "kthb-libris-holdings",
    "title": "Libris Holdings",
    "description": "This app is applicable for the Swedish libraries. It show the Libris Holdings for each item in Alma. This is a Beta version!",
-   "subtitle": "",
+   "subtitle": "For the current view of bibliographic records (printed materials) in Alma the app displays corresponding holdings from the Swedish union catalog Libris.",
    "author": "Thomas Lind, KTH Library",
    "contentSecurity": {
       "connectSrc": [

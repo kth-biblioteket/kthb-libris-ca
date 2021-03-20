@@ -8,11 +8,8 @@ https://github.com/libris/librisxl/blob/develop/rest/API.md
 
 ### TODO
 - Felhantering
-     - Hantera om inget network nummer alls finns att söka.
      - Övrigt generellt
 - Faktorering
-- Texter
-    - Översättning
 - Config
     - Sigellista?
     - Layout av formulär
