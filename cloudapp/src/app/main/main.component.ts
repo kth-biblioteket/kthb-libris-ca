@@ -70,7 +70,7 @@ export class MainComponent implements OnInit, OnDestroy {
         this.hasLibrisResult = false
         this.numberofAlmaItems  = pageInfo.entities.length
         if(entities[0].type == "ITEM"){
-          this.subscription$ = this.getAlmaDetails(this.pageEntities[0].link, entities[0].type)
+          this.subscription$ = this.getAlmaDetails(`/bibs?mms_id=${this.pageEntities.map(e=>this.substrInBetween(e.link, "bibs/", "/holdings")).join(',')}&view=brief`, "ITEM")
           .subscribe()
         } else {
           this.subscription$ = this.getAlmaDetails(`/bibs?mms_id=${this.pageEntities.map(e=>e.id).join(',')}&view=brief`, "")
@@ -87,14 +87,8 @@ export class MainComponent implements OnInit, OnDestroy {
         let bibdata: any = [];
         let entities: any = [];
         let index: number;
-        console.log(type)
-        if(type == "ITEM"){
-          bibdata.push(bibs.bib_data);
-          entities.push(this.pageEntities[0])
-        } else {
-          bibdata = bibs.bib;
-          entities = this.pageEntities
-        }
+        bibdata = bibs.bib;
+        entities = this.pageEntities
         for(const bib of bibdata) {
           if (bib.network_number) {
             const librisarr = this.librisservice.getLibrisType(bib.network_number)
@@ -102,14 +96,17 @@ export class MainComponent implements OnInit, OnDestroy {
               this.librisservice.getLibrisInstance(librisarr[0], librisarr[1], this.config.librisUrl).pipe(
                 map(async lib=>{
                   if(type == "ITEM"){
-                    index = 0 
+                    index = entities.findIndex(obj => {
+                      return this.substrInBetween(obj.link, "bibs/", "/holdings")==bib.mms_id
+                    })
                   } else {
                     index = entities.findIndex(obj => obj.id==bib.mms_id)
                   }
-                  this.librisitems[index] = await this.librisservice.getLibrisItem(lib, librisarr[0], bib, index, this.sigels)
+                  this.librisitems.push(await this.librisservice.getLibrisItem(lib, librisarr[0], bib, index, this.sigels))
                   this.nrofLibrisItemsReceived++;
-                  if (this.nrofLibrisItemsReceived >= entities.length) {
-                    this.hasLibrisResult = true;
+                  if (this.nrofLibrisItemsReceived >= bibdata.length) {
+                    this.librisservice.sort_by_key(this.librisitems,"index")
+                    this.hasLibrisResult = true; 
                   } 
                 }),
                 catchError(err => {
@@ -123,7 +120,8 @@ export class MainComponent implements OnInit, OnDestroy {
                     "errormessage": err.message
                   }
                   this.nrofLibrisItemsReceived++;
-                  if (this.nrofLibrisItemsReceived >= entities.length) {
+                  if (this.nrofLibrisItemsReceived >= bibdata.length) {
+                    this.librisservice.sort_by_key(this.librisitems,"index")
                     this.hasLibrisResult = true;
                   }
                   return throwError(err);
@@ -141,7 +139,8 @@ export class MainComponent implements OnInit, OnDestroy {
                 "errormessage": this.translate.instant('Translate.nonetworknumberfound')
               }
               this.nrofLibrisItemsReceived++;
-              if (this.nrofLibrisItemsReceived >= entities.length) {
+              if (this.nrofLibrisItemsReceived >= bibdata.length) {
+                this.librisservice.sort_by_key(this.librisitems,"index")
                 this.hasLibrisResult = true;
               }
             }
@@ -156,7 +155,8 @@ export class MainComponent implements OnInit, OnDestroy {
               "errormessage": this.translate.instant('Translate.nonetworknumberfound')
             }
             this.nrofLibrisItemsReceived++;
-            if (this.nrofLibrisItemsReceived >= entities.length) {
+            if (this.nrofLibrisItemsReceived >= bibdata.length) {
+              this.librisservice.sort_by_key(this.librisitems,"index")
               this.hasLibrisResult = true;
             }
           }
@@ -177,5 +177,15 @@ export class MainComponent implements OnInit, OnDestroy {
   setLang(lang: string) {
     this.translate.use(lang);
   }
-  
+
+  substrInBetween(whole_str: string, str1: string, str2: string){
+    if (whole_str.indexOf(str1) === -1 || whole_str.indexOf(str2) === -1) {
+        return undefined;
+   }
+   return whole_str.substring(
+            whole_str.indexOf(str1) + str1.length, 
+            whole_str.indexOf(str2)
+          );
+    }
+
 }

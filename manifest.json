@@ -20,7 +20,7 @@
    },
    "pages": {
       "config": "/#/configuration",
-      "help": "https://github.com/kth-biblioteket/kthb-libris-ca/wiki/Help"
+      "help": "https://github.com/kth-biblioteket/kthb-libris-ca/wiki"
    },
    "icon": {
       "type": "url",

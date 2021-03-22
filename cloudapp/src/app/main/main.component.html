@@ -12,10 +12,10 @@
             <mat-card>
                 <mat-card-header>
                     <mat-card-title *ngIf="!librisitem.librisinstance">
-                        <i class="material-icons md-30 icon-red">error</i>{{librisitem.index + 1}}. {{librisitem.title}}
+                        <i class="material-icons md-30 icon-red">error</i>{{librisitem.title}}
                     </mat-card-title>
                     <mat-card-title *ngIf="librisitem.librisinstance">
-                        <a href="{{librisitem.librisinstancelink}}" target="_blank">{{librisitem.index + 1}}. {{librisitem.title}} <i class="material-icons md-14">launch</i></a>
+                        <a href="{{librisitem.librisinstancelink}}" target="_blank">{{librisitem.title}} <i class="material-icons md-14">launch</i></a>
                     </mat-card-title>
                 </mat-card-header>
                 <mat-card-content *ngIf="librisitem.librisid !=''">
