@@ -227,4 +227,15 @@ export class LibrisService {
         }
         return librisitem
     }
+
+    getToken = (almatoken, config) => {
+        console.log("running getToken function")
+        console.log(config)
+        const url = 'https://ref.lib.kth.se/librisproxy/librislogin/oauth/token' + `?client_id=` + config.librisClientId + `&client_secret=` + config.librisClientSecret + `&grant_type=` + 'client_credentials'
+        const headers = { 'Authorization': 'Bearer ' + almatoken, "content-type":"application/x-www-form-urlencoded" };
+        const body = { title: 'Angular POST Request Example' };
+        this.http.post<any>(url, body, { headers }).subscribe(data => {
+            console.log(data);
+        });
+    }
 }

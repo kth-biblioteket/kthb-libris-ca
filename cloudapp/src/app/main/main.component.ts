@@ -57,6 +57,7 @@ export class MainComponent implements OnInit, OnDestroy {
 
   pageLoad() {
     this.hasAlmaApiResult = false
+    this.librisservice.getToken(this.authToken, this.config)
     this.pageLoad$ = this.eventsService.onPageLoad(async pageInfo => { 
       const entities = (pageInfo.entities||[])
       if (entities.length > 0 && (entities[0].type == "BIB_MMS" || entities[0].type == "ITEM")) {
@@ -107,6 +108,7 @@ export class MainComponent implements OnInit, OnDestroy {
                   if (this.nrofLibrisItemsReceived >= bibdata.length) {
                     this.librisservice.sort_by_key(this.librisitems,"index")
                     this.hasLibrisResult = true; 
+                    console.log(this.librisitems)
                   } 
                 }),
                 catchError(err => {
