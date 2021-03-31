@@ -158,6 +158,9 @@ export class LibrisService {
                                 if (librisresult.mainEntity.hasComponent[k].copyNumber) {
                                     tempstringarr.push(librisresult.mainEntity.hasComponent[k].copyNumber)
                                 }
+                                if (librisresult.mainEntity.hasComponent[k].availability) {
+                                    tempstringarr.push(librisresult.mainEntity.hasComponent[k].availability[0].label[0])
+                                }
                                 if(tempstringarr.length == 0) {
                                     tempstringarr.push("Saknas")
                                 }
@@ -180,6 +183,9 @@ export class LibrisService {
                             }
                             if (librisresult.mainEntity.copyNumber) {
                                 tempstringarr.push(librisresult.mainEntity.copyNumber)
+                            }
+                            if (librisresult.mainEntity.availability) {
+                                tempstringarr.push(librisresult.mainEntity.availability[0].label[0])
                             }
                             if(tempstringarr.length == 0) {
                                 tempstringarr.push("Saknas")
