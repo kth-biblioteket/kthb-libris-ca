@@ -2,11 +2,11 @@
 
     <mat-form-field  id="sigel">
         <mat-label><span *ngIf="showExample"><b>1. </b></span>Sigel</mat-label>
-        <input matInput required [(ngModel)]="data.sigel" (change)="onChange()" [maxLength]="20">
+        <input matInput required [(ngModel)]="data.sigel" (change)="onChange()" [maxLength]="5">
     </mat-form-field><br>
     <mat-form-field  id="libraryname">
         <mat-label><span *ngIf="showExample"><b>1. </b></span>Libraryname</mat-label>
-        <input matInput required [(ngModel)]="data.libraryname" (change)="onChange()" [maxLength]="20">
+        <input matInput required [(ngModel)]="data.libraryname" (change)="onChange()" [maxLength]="50">
     </mat-form-field><br>
 
 </div>
