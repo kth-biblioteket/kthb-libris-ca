@@ -11,6 +11,7 @@
          "https://ref.lib.kth.se/",
          "https://libris-qa.kb.se/",
          "https://libris.kb.se/",
+         "https://login.libris.kb.se/",
          "https://api.exldevnetwork.net/"
       ],
       "sandbox": {
