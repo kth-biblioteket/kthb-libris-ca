@@ -15,6 +15,7 @@ import {Configuration} from '../models/configuration';
 import {LibrisSigelTemplate} from "../models/libris-sigel-template";
 import {MatDialog} from "@angular/material/dialog";
 import {ConfigurationDialogComponent} from "./configuration-dialog/configuration-dialog.component";
+import * as lodash from 'lodash';
 
 @Component({
   selector: 'app-configuration',
@@ -43,25 +44,19 @@ export class ConfigurationComponent implements OnInit {
     })
    }
   
-  // Shows and hides the loading spinner during RouterEvent changes
   navigationInterceptor(event: RouterEvent): void {
     if (event instanceof NavigationStart) {
       this.loading = true
-      console.log("NavigationStart")
     }
     if (event instanceof NavigationEnd) {
       this.loading = false
-      console.log("NavigationEnd")
     }
 
-    // Set loading state to false in both of the below events to hide the spinner in case a request fails
     if (event instanceof NavigationCancel) {
       this.loading = false
-      console.log("NavigationCancel")
     }
     if (event instanceof NavigationError) {
       this.loading = false
-      console.log("NavigationError")
     }
   }
 
@@ -69,7 +64,9 @@ export class ConfigurationComponent implements OnInit {
     this.loading = true
     this.form = this.fb.group({
       proxyUrl: this.fb.control(''),
-      librisUrl: this.fb.control('')
+      librisUrl: this.fb.control(''),
+      librisClientId: this.fb.control(''),
+      librisClientSecret: this.fb.control('')
     });
     this.getConfiguration();
   }
@@ -79,13 +76,19 @@ export class ConfigurationComponent implements OnInit {
       if (!result.proxyUrl && !result.librisUrl && !result.LibrisSigelTemplate) {
         result = new Configuration();
       }
-      this.configuration = result;
-      this.configService.getAsFormGroup().subscribe( config => {
-        if (Object.keys(config.value).length!=0) {
-          this.form = config;
-          this.loading = false  
+      let conftemplate = new Configuration();
+      //jämför och lägg till enventuella nya fält
+      this.configuration = lodash.defaultsDeep(result, conftemplate)
+      this.configService.set(this.configuration).subscribe(
+        () => {
+          this.configService.getAsFormGroup().subscribe( config => {
+            if (Object.keys(config.value).length!=0) {
+              this.form = config;
+              this.loading = false  
+            }
+          });
         }
-      });
+      )
     })
   }
 
@@ -105,6 +108,8 @@ export class ConfigurationComponent implements OnInit {
     this.saving = true;
     this.configuration.proxyUrl = this.form.value.proxyUrl
     this.configuration.librisUrl = this.form.value.librisUrl
+    this.configuration.librisClientId = this.form.value.librisClientId
+    this.configuration.librisClientSecret = this.form.value.librisClientSecret
     this.configService.set(this.configuration).subscribe(
       () => {
         this.toastr.success('Configuration successfully saved.')
@@ -115,12 +120,28 @@ export class ConfigurationComponent implements OnInit {
     );
   }
   
-  resetconfiguration() {
+  resetconfiguration() { 
+    let config =
+    {
+      "LibrisSigelTemplate": [
+        {"sigel": "T", "libraryname": "KTH M Huvudbiblioteket", "id": 56264},
+        {"sigel": "Te", "libraryname": "KTH Kista", "id": 33365}, 
+        {"sigel": "Tct", "libraryname": "KTH Södertälje", "id": 39947}
+      ], 
+      "proxyUrl": "https://ref.lib.kth.se", 
+      "librisUrl": "https://libris.kb.se"
+    }
+    console.log(config)
+    console.log(this.configuration)
+    this.configService.set(config).subscribe()
+    /*
     this.configService.set([]).subscribe(
       () => {
         this.toastr.success('Configuration successfully reset.')
         this.configuration.proxyUrl = "";
         this.configuration.librisUrl = "";
+        this.configuration.librisClientId = "";
+        this.configuration.librisClientSecret = "";
         this.configuration.LibrisSigelTemplate = [];
         this.form.reset()
         this.form.markAsPristine();
@@ -128,6 +149,7 @@ export class ConfigurationComponent implements OnInit {
       err => this.alert.error(err.message),
       ()  => this.saving = false
     );
+    */
   }
   remove(removableLibrisSigelTemplate: LibrisSigelTemplate) {
     this.configuration.LibrisSigelTemplate = this.configuration.LibrisSigelTemplate.filter(LibrisSigelTemplate => LibrisSigelTemplate.id != removableLibrisSigelTemplate.id);
