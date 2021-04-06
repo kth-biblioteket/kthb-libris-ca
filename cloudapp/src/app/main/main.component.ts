@@ -110,7 +110,7 @@ export class MainComponent implements OnInit, OnDestroy {
                   } 
                 }),
                 catchError(err => {
-                  this.librisitems[entities.findIndex(obj => obj.id==bib.mms_id)] = {
+                  this.librisitems.push({
                     "index": entities.findIndex(obj => obj.id==bib.mms_id),
                     "title": bib.title,
                     "librisid": librisarr[0],
@@ -118,7 +118,7 @@ export class MainComponent implements OnInit, OnDestroy {
                     "librisinstancelink": "#",
                     "librisholdings": [],
                     "errormessage": err.message
-                  }
+                  })
                   this.nrofLibrisItemsReceived++;
                   if (this.nrofLibrisItemsReceived >= bibdata.length) {
                     this.librisservice.sort_by_key(this.librisitems,"index")
@@ -129,7 +129,7 @@ export class MainComponent implements OnInit, OnDestroy {
               )
               .subscribe()
             } else {
-              this.librisitems[entities.findIndex(obj => obj.id==bib.mms_id)] = {
+              this.librisitems.push({
                 "index": entities.findIndex(obj => obj.id==bib.mms_id),
                 "title": bib.title,
                 "librisid": librisarr[0],
@@ -137,7 +137,7 @@ export class MainComponent implements OnInit, OnDestroy {
                 "librisinstancelink": "#",
                 "librisholdings": [],
                 "errormessage": this.translate.instant('Translate.nonetworknumberfound')
-              }
+              })
               this.nrofLibrisItemsReceived++;
               if (this.nrofLibrisItemsReceived >= bibdata.length) {
                 this.librisservice.sort_by_key(this.librisitems,"index")
