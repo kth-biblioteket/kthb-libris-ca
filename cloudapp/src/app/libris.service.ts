@@ -125,82 +125,90 @@ export class LibrisService {
                 librisholdings=[]
                 holdingsindex = 0;
                 for (let j = 0; j < librisobject.items[i]['@reverse'].itemOf.length; j++) {
-                    if(sigels.some(row => row.sigel.includes(librisobject.items[i]['@reverse'].itemOf[j].heldBy['@id'].substring(librisobject.items[i]['@reverse'].itemOf[j].heldBy['@id'].lastIndexOf("/")+1)))) {
-                        sigelmatch = true;
-                        librisresult = await this.http.get<any>(librisobject.items[i]['@reverse'].itemOf[j]['@id'].replace('#it','') + '/data.jsonld', {}).toPromise()
-                        
-                        librisholdings[holdingsindex] = {}
-                        lastslash = librisobject.items[i]['@reverse'].itemOf[j].heldBy['@id'].lastIndexOf("/")
-                        librisholdings[holdingsindex].sigel= librisobject.items[i]['@reverse'].itemOf[j].heldBy['@id'].substring(lastslash+1)
-                        
-                        lastslash = librisresult.mainEntity['@id'].lastIndexOf("/");
-                        librisholdingslink = librisresult.mainEntity['@id'].substring(0,lastslash)+"/katalogisering" + librisresult.mainEntity['@id'].substring(lastslash);
-                        librisholdings[holdingsindex].link = librisholdingslink
-                        shelves = []
+                    if(librisobject.items[i]['@reverse'].itemOf[j].heldBy) {
+                        if(sigels.some(row => row.sigel.includes(librisobject.items[i]['@reverse'].itemOf[j].heldBy['@id'].substring(librisobject.items[i]['@reverse'].itemOf[j].heldBy['@id'].lastIndexOf("/")+1)))) {
+                            sigelmatch = true;
+                            librisresult = await this.http.get<any>(librisobject.items[i]['@reverse'].itemOf[j]['@id'].replace('#it','') + '/data.jsonld', {}).toPromise()
+                            
+                            librisholdings[holdingsindex] = {}
+                            lastslash = librisobject.items[i]['@reverse'].itemOf[j].heldBy['@id'].lastIndexOf("/")
+                            librisholdings[holdingsindex].sigel= librisobject.items[i]['@reverse'].itemOf[j].heldBy['@id'].substring(lastslash+1)
+                            
+                            lastslash = librisresult.mainEntity['@id'].lastIndexOf("/");
+                            librisholdingslink = librisresult.mainEntity['@id'].substring(0,lastslash)+"/katalogisering" + librisresult.mainEntity['@id'].substring(lastslash);
+                            librisholdings[holdingsindex].link = librisholdingslink
+                            shelves = []
 
-                        let tempstringarr:any
-                        if (librisresult.mainEntity.hasComponent) {
-                            for (let k=0;k<librisresult.mainEntity.hasComponent.length;k++) {
+                            let tempstringarr:any
+                            if (librisresult.mainEntity.hasComponent) {
+                                for (let k=0;k<librisresult.mainEntity.hasComponent.length;k++) {
+                                    tempstringarr = []
+                                    shelves[k] = {}
+                                    if (librisresult.mainEntity.hasComponent[k].physicalLocation) {
+                                        tempstringarr.push(librisresult.mainEntity.hasComponent[k].physicalLocation[0])
+                                    }
+                                    if (librisresult.mainEntity.hasComponent[k].shelfMark) {
+                                        tempstringarr.push(librisresult.mainEntity.hasComponent[k].shelfMark.label)
+                                    }
+                                    if (librisresult.mainEntity.hasComponent[k].shelfControlNumber) {
+                                        tempstringarr.push(librisresult.mainEntity.hasComponent[k].shelfControlNumber)
+                                    }
+                                    if (librisresult.mainEntity.hasComponent[k].shelfLabel) {
+                                        tempstringarr.push(librisresult.mainEntity.hasComponent[k].shelfLabel)
+                                    }
+                                    if (librisresult.mainEntity.hasComponent[k].copyNumber) {
+                                        tempstringarr.push(librisresult.mainEntity.hasComponent[k].copyNumber)
+                                    }
+                                    if (librisresult.mainEntity.hasComponent[k].availability) {
+                                        tempstringarr.push(librisresult.mainEntity.hasComponent[k].availability[0].label[0])
+                                    }
+                                    if(tempstringarr.length == 0) {
+                                        tempstringarr.push("Saknas")
+                                    }
+                                    shelves[k].name = tempstringarr.join(' | ');
+                                }
+                            } else {
                                 tempstringarr = []
-                                shelves[k] = {}
-                                if (librisresult.mainEntity.hasComponent[k].physicalLocation) {
-                                    tempstringarr.push(librisresult.mainEntity.hasComponent[k].physicalLocation[0])
+                                shelves[0] = {}
+                                if (librisresult.mainEntity.physicalLocation) {
+                                    tempstringarr.push(librisresult.mainEntity.physicalLocation[0])
                                 }
-                                if (librisresult.mainEntity.hasComponent[k].shelfMark) {
-                                    tempstringarr.push(librisresult.mainEntity.hasComponent[k].shelfMark.label)
+                                if (librisresult.mainEntity.shelfMark) {
+                                    tempstringarr.push(librisresult.mainEntity.shelfMark.label)
                                 }
-                                if (librisresult.mainEntity.hasComponent[k].shelfControlNumber) {
-                                    tempstringarr.push(librisresult.mainEntity.hasComponent[k].shelfControlNumber)
+                                if (librisresult.mainEntity.shelfControlNumber) {
+                                    tempstringarr.push(librisresult.mainEntity.shelfControlNumber)
                                 }
-                                if (librisresult.mainEntity.hasComponent[k].shelfLabel) {
-                                    tempstringarr.push(librisresult.mainEntity.hasComponent[k].shelfLabel)
+                                if (librisresult.mainEntity.shelfLabel) {
+                                    tempstringarr.push(librisresult.mainEntity.shelfLabel)
                                 }
-                                if (librisresult.mainEntity.hasComponent[k].copyNumber) {
-                                    tempstringarr.push(librisresult.mainEntity.hasComponent[k].copyNumber)
+                                if (librisresult.mainEntity.copyNumber) {
+                                    tempstringarr.push(librisresult.mainEntity.copyNumber)
+                                }
+                                if (librisresult.mainEntity.availability) {
+                                    tempstringarr.push(librisresult.mainEntity.availability[0].label[0])
                                 }
                                 if(tempstringarr.length == 0) {
                                     tempstringarr.push("Saknas")
                                 }
-                                shelves[k].name = tempstringarr.join(' | ');
+                                shelves[0].name = tempstringarr.join(' | ');
                             }
-                        } else {
-                            tempstringarr = []
-                            shelves[0] = {}
-                            if (librisresult.mainEntity.physicalLocation) {
-                                tempstringarr.push(librisresult.mainEntity.physicalLocation[0])
-                            }
-                            if (librisresult.mainEntity.shelfMark) {
-                                tempstringarr.push(librisresult.mainEntity.shelfMark.label)
-                            }
-                            if (librisresult.mainEntity.shelfControlNumber) {
-                                tempstringarr.push(librisresult.mainEntity.shelfControlNumber)
-                            }
-                            if (librisresult.mainEntity.shelfLabel) {
-                                tempstringarr.push(librisresult.mainEntity.shelfLabel)
-                            }
-                            if (librisresult.mainEntity.copyNumber) {
-                                tempstringarr.push(librisresult.mainEntity.copyNumber)
-                            }
-                            if(tempstringarr.length == 0) {
-                                tempstringarr.push("Saknas")
-                            }
-                            shelves[0].name = tempstringarr.join(' | ');
-                        }
-                        librisholdings[holdingsindex].shelves = shelves
+                            librisholdings[holdingsindex].shelves = shelves
 
-                        tempstringarr = []
-                        if(librisresult.mainEntity["marc:hasTextualHoldingsBasicBibliographicUnit"]) {
-                            for(let l=0;l<librisresult.mainEntity["marc:hasTextualHoldingsBasicBibliographicUnit"].length;l++) {
-                                if(librisresult.mainEntity["marc:hasTextualHoldingsBasicBibliographicUnit"][l]["marc:publicNote"]) {
-                                    tempstringarr.push(librisresult.mainEntity["marc:hasTextualHoldingsBasicBibliographicUnit"][l]["marc:publicNote"][0]);
-                                }
-                                if(librisresult.mainEntity["marc:hasTextualHoldingsBasicBibliographicUnit"][l]["marc:textualString"]) {
-                                    tempstringarr.push(librisresult.mainEntity["marc:hasTextualHoldingsBasicBibliographicUnit"][l]["marc:textualString"]);
+                            tempstringarr = []
+                            if(librisresult.mainEntity["marc:hasTextualHoldingsBasicBibliographicUnit"]) {
+                                for(let l=0;l<librisresult.mainEntity["marc:hasTextualHoldingsBasicBibliographicUnit"].length;l++) {
+                                    if(librisresult.mainEntity["marc:hasTextualHoldingsBasicBibliographicUnit"][l]["marc:publicNote"]) {
+                                        tempstringarr.push(librisresult.mainEntity["marc:hasTextualHoldingsBasicBibliographicUnit"][l]["marc:publicNote"][0]);
+                                    }
+                                    if(librisresult.mainEntity["marc:hasTextualHoldingsBasicBibliographicUnit"][l]["marc:textualString"]) {
+                                        tempstringarr.push(librisresult.mainEntity["marc:hasTextualHoldingsBasicBibliographicUnit"][l]["marc:textualString"]);
+                                    }
                                 }
                             }
+                            librisholdings[holdingsindex].otherinfo = tempstringarr.join(' | ');
+                            holdingsindex++
                         }
-                        librisholdings[holdingsindex].otherinfo = tempstringarr.join(' | ');
-                        holdingsindex++
                     }
                 }
                 if (!sigelmatch) {

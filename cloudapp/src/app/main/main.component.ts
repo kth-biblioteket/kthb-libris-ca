@@ -112,15 +112,22 @@ export class MainComponent implements OnInit, OnDestroy {
                   } 
                 }),
                 catchError(err => {
-                  this.librisitems[entities.findIndex(obj => obj.id==bib.mms_id)] = {
-                    "index": entities.findIndex(obj => obj.id==bib.mms_id),
+                  if(type == "ITEM"){
+                    index = entities.findIndex(obj => {
+                      return this.substrInBetween(obj.link, "bibs/", "/holdings")==bib.mms_id
+                    })
+                  } else {
+                    index = entities.findIndex(obj => obj.id==bib.mms_id)
+                  }
+                  this.librisitems.push({
+                    "index": index,
                     "title": bib.title,
                     "librisid": librisarr[0],
                     "librisinstance": false,
                     "librisinstancelink": "#",
                     "librisholdings": [],
                     "errormessage": err.message
-                  }
+                  })
                   this.nrofLibrisItemsReceived++;
                   if (this.nrofLibrisItemsReceived >= bibdata.length) {
                     this.librisservice.sort_by_key(this.librisitems,"index")
@@ -131,15 +138,22 @@ export class MainComponent implements OnInit, OnDestroy {
               )
               .subscribe()
             } else {
-              this.librisitems[entities.findIndex(obj => obj.id==bib.mms_id)] = {
-                "index": entities.findIndex(obj => obj.id==bib.mms_id),
+              if(type == "ITEM"){
+                index = entities.findIndex(obj => {
+                  return this.substrInBetween(obj.link, "bibs/", "/holdings")==bib.mms_id
+                })
+              } else {
+                index = entities.findIndex(obj => obj.id==bib.mms_id)
+              }
+              this.librisitems.push({
+                "index": index,
                 "title": bib.title,
                 "librisid": librisarr[0],
                 "librisinstance": false,
                 "librisinstancelink": "#",
                 "librisholdings": [],
                 "errormessage": this.translate.instant('Translate.nonetworknumberfound')
-              }
+              })
               this.nrofLibrisItemsReceived++;
               if (this.nrofLibrisItemsReceived >= bibdata.length) {
                 this.librisservice.sort_by_key(this.librisitems,"index")
@@ -147,15 +161,22 @@ export class MainComponent implements OnInit, OnDestroy {
               }
             }
           } else {
-            this.librisitems[entities.findIndex(obj => obj.id==bib.mms_id)] = {
-              "index": entities.findIndex(obj => obj.id==bib.mms_id),
+            if(type == "ITEM"){
+              index = entities.findIndex(obj => {
+                return this.substrInBetween(obj.link, "bibs/", "/holdings")==bib.mms_id
+              })
+            } else {
+              index = entities.findIndex(obj => obj.id==bib.mms_id)
+            }
+            this.librisitems.push({
+              "index": index,
               "title": bib.title,
               "librisid": "",
               "librisinstance": false,
               "librisinstancelink": "#",
               "librisholdings": [],
               "errormessage": this.translate.instant('Translate.nonetworknumberfound')
-            }
+            })
             this.nrofLibrisItemsReceived++;
             if (this.nrofLibrisItemsReceived >= bibdata.length) {
               this.librisservice.sort_by_key(this.librisitems,"index")
