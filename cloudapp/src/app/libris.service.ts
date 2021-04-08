@@ -129,7 +129,6 @@ export class LibrisService {
                         if(sigels.some(row => row.sigel.includes(librisobject.items[i]['@reverse'].itemOf[j].heldBy['@id'].substring(librisobject.items[i]['@reverse'].itemOf[j].heldBy['@id'].lastIndexOf("/")+1)))) {
                             sigelmatch = true;
                             librisresult = await this.http.get<any>(librisobject.items[i]['@reverse'].itemOf[j]['@id'].replace('#it','') + '/data.jsonld', {}).toPromise()
-                            
                             librisholdings[holdingsindex] = {}
                             lastslash = librisobject.items[i]['@reverse'].itemOf[j].heldBy['@id'].lastIndexOf("/")
                             librisholdings[holdingsindex].sigel= librisobject.items[i]['@reverse'].itemOf[j].heldBy['@id'].substring(lastslash+1)
@@ -236,14 +235,33 @@ export class LibrisService {
         return librisitem
     }
 
-    getToken = (almatoken, config) => {
-        console.log("running getToken function")
-        console.log(config)
-        const url = 'https://ref.lib.kth.se/librisproxy/librislogin/oauth/token' + `?client_id=` + config.librisClientId + `&client_secret=` + config.librisClientSecret + `&grant_type=` + 'client_credentials'
-        const headers = { 'Authorization': 'Bearer ' + almatoken, "content-type":"application/x-www-form-urlencoded" };
-        const body = { title: 'Angular POST Request Example' };
-        this.http.post<any>(url, body, { headers }).subscribe(data => {
+    async deleteLibrisHolding(librisHoldingsLink: string, librisSigel: string, almaAuthToken: string, config: any) {
+        let librisToken = await this.getToken(almaAuthToken, config).toPromise()
+        console.log("librisToken: ")
+        console.log(librisToken)
+        console.log(librisHoldingsLink)
+        let lastslash = librisHoldingsLink.lastIndexOf("/");
+        librisHoldingsLink = librisHoldingsLink.substring(lastslash);
+                            
+        console.log("https://ref.lib.kth.se/librisproxy/librisref" + librisHoldingsLink)
+        const headers = { 'Authorization': 'Bearer ' + almaAuthToken, "XL-Active-Sigel": librisSigel };
+
+        console.log(headers)
+        const body = { title: 'Delete holdings' };
+        /*
+        this.http.delete<any>("https://ref.lib.kth.se/librisproxy/librisref" + librisHoldingsLink, { headers }).subscribe(data => {
             console.log(data);
         });
+        */
+        
+    }
+
+    getToken = (almaAuthToken, config) => {
+        console.log("running getToken function")
+        const url = 'https://ref.lib.kth.se/librisproxy/librislogin/oauth/token' + `?client_id=` + config.librisClientId + `&client_secret=` + config.librisClientSecret + `&grant_type=` + 'client_credentials'
+        const headers = { 'Authorization': 'Bearer ' + almaAuthToken, "content-type":"application/x-www-form-urlencoded" };
+        const body = { title: 'Angular POST Request Example' };
+        var res = this.http.post<any>(url, body, { headers })
+        return res
     }
 }

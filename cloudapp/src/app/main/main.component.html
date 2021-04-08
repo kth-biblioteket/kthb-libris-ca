@@ -42,6 +42,9 @@
                         <div *ngIf="librisholding.link != '#'" style="padding-left: 0px; padding-bottom: 10px">
                             <a href="{{librisholding.link}}" target="_blank" translate>Translate.librisholdingslinktext <i class="material-icons md-14">launch</i></a>
                         </div>
+                        <div *ngIf="librisholding.link != '#'" style="padding-left: 0px; padding-bottom: 10px">
+                            <a (click)="deleteLibrisHolding(librisholding.link, librisholding.sigel )"> Delete holdings in Libris<i class="material-icons md-16">delete</i></a>
+                        </div>
                     </div>
                 </mat-card-content>
                 <mat-card-content *ngIf="librisitem.librisholdings.length == 0 && librisitem.librisinstance">

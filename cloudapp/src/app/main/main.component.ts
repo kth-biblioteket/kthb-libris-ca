@@ -188,6 +188,14 @@ export class MainComponent implements OnInit, OnDestroy {
     )
   }
 
+  deleteLibrisHolding(librisHoldingsLink: string, librisSigel: string) {
+    if(confirm("Are you sure to delete " + librisHoldingsLink)) {
+      console.log("Yes!");
+      //this.librisservice.deleteLibrisHolding(librisHoldingsLink, librisSigel, this.authToken, this.config)
+    }
+    
+  }
+
   ngOnDestroy(): void {
     if(this.pageLoad$) {
       this.pageLoad$.unsubscribe();
