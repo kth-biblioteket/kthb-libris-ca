@@ -50,8 +50,14 @@ export class LibrisService {
         let librisidtype: string = "";
     
         for (let k = 0; k < network_number.length; k++) {
-          if(network_number[k].indexOf('(LIBRIS)') !== -1 || network_number[k].indexOf('(SE-LIBR)') !== -1 ) {
+          if(network_number[k].indexOf('(LIBRIS)') !== -1 ) {
             currentlibrisid = network_number[k].substr(8, network_number[k].length);
+            librisidtype = 'bibid'
+            break;
+          }
+
+          if(network_number[k].indexOf('(SE-LIBR)') !== -1 ) {
+            currentlibrisid = network_number[k].substr(9, network_number[k].length);
             librisidtype = 'bibid'
             break;
           }
@@ -116,7 +122,11 @@ export class LibrisService {
             title += " " + bib.author;
         }
         for (let i = 0; i < librisobject.items.length; i++) {
-            if((librisobject.items[i]['@type'] == 'Instance' || librisobject.items[i]['@type'] == 'Electronic' ) && typeof librisobject.items[i]['@reverse'] !== 'undefined') {
+            if((librisobject.items[i]['@type'] == 'Instance' 
+                || librisobject.items[i]['@type'] == 'Electronic'
+                || librisobject.items[i]['@type'] == 'Print'
+                || librisobject.items[i]['@type'] == 'TextInstance' )
+                && typeof librisobject.items[i]['@reverse'] !== 'undefined') {
                 librisinstance = true; 
                 lastslash = librisobject.items[i]['@id'].lastIndexOf("/");
                 librisinstancelink = librisobject.items[i]['@id'].substring(0,lastslash)+"/katalogisering" + librisobject.items[i]['@id'].substring(lastslash);
