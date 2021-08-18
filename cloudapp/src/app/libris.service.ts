@@ -136,7 +136,13 @@ export class LibrisService {
                 holdingsindex = 0;
                 for (let j = 0; j < librisobject.items[i]['@reverse'].itemOf.length; j++) {
                     if(librisobject.items[i]['@reverse'].itemOf[j].heldBy) {
-                        if(sigels.some(row => row.sigel.includes(librisobject.items[i]['@reverse'].itemOf[j].heldBy['@id'].substring(librisobject.items[i]['@reverse'].itemOf[j].heldBy['@id'].lastIndexOf("/")+1)))) {
+                        //Är aktuell heldby = något av konfigurerade Sigels?
+                        if(sigels.some(
+                            row => {
+                                return row.sigel == librisobject.items[i]['@reverse'].itemOf[j].heldBy['@id'].substring(librisobject.items[i]['@reverse'].itemOf[j].heldBy['@id'].lastIndexOf("/") + 1)
+                                }
+                            )
+                        ) {
                             sigelmatch = true;
                             librisresult = await this.http.get<any>(librisobject.items[i]['@reverse'].itemOf[j]['@id'].replace('#it','') + '/data.jsonld', {}).toPromise()
                             
