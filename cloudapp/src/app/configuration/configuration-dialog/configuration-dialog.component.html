@@ -1,5 +1,8 @@
 <div mat-dialog-content>
-
+    <div class="eca-actions">
+        <button mat-flat-button (click)="onCloseClick()" color="secondary">Cancel</button>
+        <button mat-flat-button [mat-dialog-close]="data" [disabled]="!readyForSaving" color="primary">Save</button>
+    </div>
     <mat-form-field  id="sigel">
         <mat-label><span *ngIf="showExample"><b>1. </b></span>Sigel</mat-label>
         <input matInput required [(ngModel)]="data.sigel" (change)="onChange()" [maxLength]="5">
@@ -8,10 +11,9 @@
         <mat-label><span *ngIf="showExample"><b>1. </b></span>Libraryname</mat-label>
         <input matInput required [(ngModel)]="data.libraryname" (change)="onChange()" [maxLength]="50">
     </mat-form-field><br>
+    <mat-form-field  id="almalibrarycode">
+        <mat-label><span *ngIf="showExample"><b>1. </b></span>Library code Alma</mat-label>
+        <input matInput required [(ngModel)]="data.almalibrarycode" (change)="onChange()" [maxLength]="50">
+    </mat-form-field><br>
 
-</div>
-
-<div mat-dialog-actions>
-    <button mat-button (click)="onCloseClick()" color="secondary">Cancel</button>
-    <button mat-button [mat-dialog-close]="data" [disabled]="!readyForSaving" color="primary">Save</button>
 </div>

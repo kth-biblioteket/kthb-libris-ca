@@ -6,7 +6,7 @@
         "Intro": "For the current view of bibliographic records (print), the corresponding holdings from Libris are displayed.",
         "idlabel": "Holdings for ID",
         "librisholdingslinktext" : "Holdings in Libris cataloguing",
-        "locationtext" : "Location:",
+        "locationtext" : "Location(852):",
         "otherinfotext" : "Other Holdingsinfo:",
         "notitlesinfo": "Search title/titles to see Libris Holdings.",
         "noconfiginfo": "App not configured properly, please contact your administrator.",

@@ -1,7 +1,12 @@
 import { Subscription, throwError } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { CloudAppConfigService, CloudAppRestService, CloudAppEventsService, Entity } from '@exlibris/exl-cloudapp-angular-lib';
+import { 
+  CloudAppConfigService, 
+  CloudAppRestService, 
+  CloudAppEventsService, 
+  Entity 
+} from '@exlibris/exl-cloudapp-angular-lib';
 import { TranslateService } from '@ngx-translate/core';
 import { AppService } from '../app.service';
 import { map, catchError } from 'rxjs/operators';
@@ -19,29 +24,44 @@ export class MainComponent implements OnInit, OnDestroy {
   private subscription$: Subscription;
   private pageLoad$: Subscription;
 
-  librisitems: LibrisItem []
-  pageEntities: Entity[];
+  app_error: boolean = false;
+  app_errormessage: string;
+
+  entities: Entity[];
+  pageitems: any;
   hasAlmaApiResult: boolean = false;
+  
   config: any;
   configmissing: boolean = false;
+
   sigels: any;
   authToken: string;
+
   numberofAlmaItems: any;
-  nrofLibrisItemsReceived: any;
+  nrofEntetiesProcessed: any;
+
   hasLibrisResult: boolean;
 
-  constructor(private configService: CloudAppConfigService,
+  constructor(
+    private configService: CloudAppConfigService,
     private restService: CloudAppRestService,
     private eventsService: CloudAppEventsService,
     private appService: AppService,
     private translate: TranslateService,
     private toastr: ToastrService,
-    private librisservice: LibrisService) { 
-  } 
+    private librisservice: LibrisService
+    ) { } 
 
   ngOnInit() {
-    this.eventsService.getAuthToken().subscribe(authToken => this.authToken = authToken);
-    this.configService.get().pipe(
+    //Hämta en token för eventuella anrop.
+    this.eventsService
+    .getAuthToken()
+    .subscribe(authToken => this.authToken = authToken);
+
+    //Hämta aktuell konfiguration
+    this.configService
+    .get()
+    .pipe(
       map(conf=>{
         if (!conf.librisUrl || !conf.LibrisSigelTemplate) {
           this.configmissing = true
@@ -55,135 +75,182 @@ export class MainComponent implements OnInit, OnDestroy {
     ).subscribe()
   }
 
+  /**
+   * Funktion som i huvudsak hämtar bib-information från Alma
+   * utifrån de poster som visas på aktuell sids i Alma
+   * 
+   * För varje post hämtas sedan holdings ifrån Libris
+   * och dessa holdings visas i appen.
+   * 
+   */
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   pageLoad() {
-    this.hasAlmaApiResult = false
     this.pageLoad$ = this.eventsService.onPageLoad(async pageInfo => { 
-      const entities = (pageInfo.entities||[])
-      if (entities.length > 0 && (entities[0].type == "BIB_MMS" || entities[0].type == "ITEM")) {
-        if(this.subscription$) {
-          this.subscription$.unsubscribe();
-        }
-        this.librisitems = []
-        this.hasAlmaApiResult = true
-        this.nrofLibrisItemsReceived = 0
-        this.pageEntities = pageInfo.entities;
-        this.hasLibrisResult = false
-        this.numberofAlmaItems  = pageInfo.entities.length
-        if(entities[0].type == "ITEM"){
-          this.subscription$ = this.getAlmaDetails(`/bibs?mms_id=${this.pageEntities.map(e=>this.substrInBetween(e.link, "bibs/", "/holdings")).join(',')}&view=brief`, "ITEM")
-          .subscribe()
-        } else {
-          this.subscription$ = this.getAlmaDetails(`/bibs?mms_id=${this.pageEntities.map(e=>e.id).join(',')}&view=brief`, "")
-          .subscribe()
-        }
+      this.hasAlmaApiResult = false;
+      this.hasLibrisResult = false;
+      this.app_error = false;
+      this.app_errormessage = "";
+
+      if(this.subscription$) {
+        this.subscription$.unsubscribe();
+      }
+
+      this.entities = (pageInfo.entities||[])
+
+      //Kör bara om poster som visas i Alma är items eller bibs eller holdings
+      if ( this.entities.length > 0 && (this.entities[0].type == "BIB_MMS" || this.entities[0].type == "ITEM" || this.entities[0].type == "HOLDING")) {      
+  
+        this.hasAlmaApiResult = true;
+        this.nrofEntetiesProcessed = 0;  
+
+        this.pageitems = [];
+
+        this.numberofAlmaItems = this.entities.length;
+
+        //Gå igenom alla poster på aktuell sida.
+        this.entities.map((e, index) => {
+          this.pageitems[index] = [];
+          let sigeltolibris: any;
+          //Hämta ytterligare almainformation
+          //Skapa rätt länk
+          
+          let almaurl = "";
+          if (e.type == "HOLDING"){
+            almaurl = e.link.split('/holdings')[0]
+          } else {
+            almaurl = e.link
+          }
+          
+          this.restService
+            .call(almaurl)
+            .pipe(
+              map(async (item) => {
+                let librisarr: any;
+                let bib: any;
+                //Item-poster
+                if (e.type == "ITEM") {
+                  bib = item.bib_data;
+                  //Hitta vilken typ av libris-id som är aktuellt
+                  if (item.bib_data.network_number) {
+                    librisarr = this.librisservice.getLibrisType(
+                      item.bib_data.network_number
+                    );
+                  }
+
+                  this.pageitems[index].almaholdingslink = item.holding_data.link;
+                  this.pageitems[index].mms_id = item.bib_data.mms_id;
+                  this.pageitems[index].holding_id = item.holding_data.holding_id;
+                    
+                  //Om posten är av typ ITEM = specifik post => sigel som skickas till getlibrisitem = endast aktuellt
+                  sigeltolibris = [this.sigels.find(({almalibrarycode}) => almalibrarycode === item.item_data.library.value)];
+                  //Om det är en post som har location "Main Library: Staff, Acquisitions department"
+                  //Sök på alla sigel i Libris
+                  if (item.item_data.location.value == "hbkla") {
+                    sigeltolibris = this.sigels;
+                  }
+                  
+                }
+
+                //BIB-poster
+                if (e.type == "BIB_MMS" || e.type == "HOLDING") {
+                  bib = item;
+                  if (item.network_number) {
+                    librisarr = this.librisservice.getLibrisType(
+                      item.network_number
+                    );
+                  }
+
+                  //Om posten är av typen BIB_MMS = generell bib post => sigel som skickas till getlibrisitem = samtliga
+                  sigeltolibris = this.sigels;
+                }
+
+                //Om det finns en koppling till Libris
+                if (librisarr[0] != "") {
+                  //hämta librisinstans utirån 035-id
+                  try {
+                    let lib = await this.librisservice
+                      .getLibrisInstance(
+                        librisarr[0], //id
+                        librisarr[1], //type (bibid, libris3)
+                        this.config.librisUrl
+                      )
+                      .toPromise();
+                    this.pageitems[index].librisinstance = lib;
+                    //hämta librisitem utifrån librisid (från instans)
+                    let librisitem = await this.librisservice.getLibrisItem(
+                      lib, //librisinstansen
+                      librisarr[0], //för att visa librisid
+                      bib, //för att visa title + author
+                      sigeltolibris
+                    );
+                    this.pageitems[index].librisitem = librisitem;
+                  } catch (error) {
+                    //Eventuella fel
+                    this.pageitems[index].librisitem = {
+                      index: index,
+                      title: bib.title,
+                      librisid: "",
+                      librisinstance: null,
+                      librisinstancelink: "",
+                      librisholdings: {},
+                      errormessage: error.message,
+                    };
+                  }
+                } else {
+                  //Posten har inget network number som matchar godkända librisid/typer
+                  this.pageitems[index].librisitem = {
+                    index: index,
+                    title: bib.title,
+                    librisid: librisarr[0],
+                    librisinstance: false,
+                    librisinstancelink: "#",
+                    librisholdings: [],
+                    errormessage: this.translate.instant(
+                      "Translate.nonetworknumberfound"
+                    ),
+                  };
+                }
+
+                //Räkna upp hur många poster som gåtts igenom och indikera att reslutat är klart om alla poster på sidan gåtts igenom
+                this.nrofEntetiesProcessed++;
+                if (this.nrofEntetiesProcessed >= this.numberofAlmaItems) {
+                  this.hasLibrisResult = true;
+                }
+              }),
+              catchError(err => {
+                //Troligen har något gått fel vid anropet till alma
+                this.pageitems[index].librisitem = {
+                  index: index,
+                    title: "",
+                    librisid: {},
+                    librisinstance: false,
+                    librisinstancelink: "#",
+                    librisholdings: [],
+                    errormessage: err.message
+                }
+                
+                this.nrofEntetiesProcessed++;
+                if (this.nrofEntetiesProcessed >= this.numberofAlmaItems) {
+                  this.hasLibrisResult = true;
+                }
+                this.app_error = true;
+                this.app_errormessage = 'Error: ' + err.message;
+                return throwError(err);
+              })
+            )
+            .subscribe();
+        });
       }
     });
-  }
-  
-  getAlmaDetails(url: string, type: string) {
-    return this.restService.call(url)
-    .pipe(
-      map((bibs) => {
-        let bibdata: any = [];
-        let entities: any = [];
-        let index: number;
-        bibdata = bibs.bib;
-        entities = this.pageEntities
-        for(const bib of bibdata) {
-          if (bib.network_number) {
-            const librisarr = this.librisservice.getLibrisType(bib.network_number)
-            if (librisarr[0]!="") {
-              this.librisservice.getLibrisInstance(librisarr[0], librisarr[1], this.config.librisUrl).pipe(
-                map(async lib=>{
-                  if(type == "ITEM"){
-                    index = entities.findIndex(obj => {
-                      return this.substrInBetween(obj.link, "bibs/", "/holdings")==bib.mms_id
-                    })
-                  } else {
-                    index = entities.findIndex(obj => obj.id==bib.mms_id)
-                  }
-                  this.librisitems.push(await this.librisservice.getLibrisItem(lib, librisarr[0], bib, index, this.sigels))
-                  this.nrofLibrisItemsReceived++;
-                  if (this.nrofLibrisItemsReceived >= bibdata.length) {
-                    this.librisservice.sort_by_key(this.librisitems,"index")
-                    this.hasLibrisResult = true;
-                  } 
-                }),
-                catchError(err => {
-                  if(type == "ITEM"){
-                    index = entities.findIndex(obj => {
-                      return this.substrInBetween(obj.link, "bibs/", "/holdings")==bib.mms_id
-                    })
-                  } else {
-                    index = entities.findIndex(obj => obj.id==bib.mms_id)
-                  }
-                  this.librisitems.push({
-                    "index": index,
-                    "title": bib.title,
-                    "librisid": librisarr[0],
-                    "librisinstance": false,
-                    "librisinstancelink": "#",
-                    "librisholdings": [],
-                    "errormessage": err.message
-                  })
-                  this.nrofLibrisItemsReceived++;
-                  if (this.nrofLibrisItemsReceived >= bibdata.length) {
-                    this.librisservice.sort_by_key(this.librisitems,"index")
-                    this.hasLibrisResult = true;
-                  }
-                  return throwError(err);
-                })
-              )
-              .subscribe()
-            } else {
-              if(type == "ITEM"){
-                index = entities.findIndex(obj => {
-                  return this.substrInBetween(obj.link, "bibs/", "/holdings")==bib.mms_id
-                })
-              } else {
-                index = entities.findIndex(obj => obj.id==bib.mms_id)
-              }
-              this.librisitems.push({
-                "index": index,
-                "title": bib.title,
-                "librisid": librisarr[0],
-                "librisinstance": false,
-                "librisinstancelink": "#",
-                "librisholdings": [],
-                "errormessage": this.translate.instant('Translate.nonetworknumberfound')
-              })
-              this.nrofLibrisItemsReceived++;
-              if (this.nrofLibrisItemsReceived >= bibdata.length) {
-                this.librisservice.sort_by_key(this.librisitems,"index")
-                this.hasLibrisResult = true;
-              }
-            }
-          } else {
-            if(type == "ITEM"){
-              index = entities.findIndex(obj => {
-                return this.substrInBetween(obj.link, "bibs/", "/holdings")==bib.mms_id
-              })
-            } else {
-              index = entities.findIndex(obj => obj.id==bib.mms_id)
-            }
-            this.librisitems.push({
-              "index": index,
-              "title": bib.title,
-              "librisid": "",
-              "librisinstance": false,
-              "librisinstancelink": "#",
-              "librisholdings": [],
-              "errormessage": this.translate.instant('Translate.nonetworknumberfound')
-            })
-            this.nrofLibrisItemsReceived++;
-            if (this.nrofLibrisItemsReceived >= bibdata.length) {
-              this.librisservice.sort_by_key(this.librisitems,"index")
-              this.hasLibrisResult = true;
-            }
-          }
-        }
-      })
-    )
   }
 
   ngOnDestroy(): void {

@@ -1,11 +1,10 @@
 {
     "files.exclude": {
+        "**/.gitkeep": true,
         "**/.ng": true,
         "**/.vscode": true,
-        "**/.gitkeep": true,
-        "**/node_modules": true,
-        "**/src/assets/manifest*.json": true,
-        "**/build": true
+        "**/build": true,
+        "**/src/assets/manifest*.json": true
     },
     "typescript.tsdk": "node_modules/typescript/lib",
     "json.schemas": [

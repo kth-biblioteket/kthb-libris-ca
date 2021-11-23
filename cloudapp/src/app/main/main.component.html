@@ -1,51 +1,80 @@
 <p><a (click)="setLang('en')">English</a> | <a (click)="setLang('sv')">Svenska</a></p>
 <h4 translate>Translate.Intro</h4>
+<div *ngIf="app_error">
+    <mat-card>
+        <mat-card-content>
+            <i class="material-icons md-30 icon-red">error</i> {{app_errormessage}}
+        </mat-card-content>
+    </mat-card>
+</div>
 <div *ngIf="hasAlmaApiResult">
     <div *ngIf="!hasLibrisResult">
         <mat-progress-spinner mode="indeterminate" diameter="50"></mat-progress-spinner>
         <span translate>Translate.Handling</span>
+        <div>{{nrofEntetiesProcessed}} av {{numberofAlmaItems}}</div>
     </div>
-    <div *ngIf="hasLibrisResult">     
+    <div *ngIf="hasLibrisResult">
         <i class="material-icons md-30 icon-green">check_circle</i>
         <p translate>Translate.Allhandled</p>
-        <div *ngFor="let librisitem of librisitems; index as i">
-            <mat-card>
+        <div *ngFor="let pageitem of pageitems; index as i">
+            <mat-card *ngIf="pageitem">
                 <mat-card-header>
-                    <mat-card-title *ngIf="!librisitem.librisinstance">
-                        <i class="material-icons md-30 icon-red">error</i>{{librisitem.title}}
+                    <mat-card-title *ngIf="!pageitem.librisitem.librisinstance">
+                        <i class="material-icons md-30 icon-red">error</i>{{i + 1 + '. ' + pageitem.librisitem.title}}
                     </mat-card-title>
-                    <mat-card-title *ngIf="librisitem.librisinstance">
-                        <a href="{{librisitem.librisinstancelink}}" target="_blank">{{librisitem.title}} <i class="material-icons md-14">launch</i></a>
+                    <mat-card-title *ngIf="pageitem.librisitem.librisinstance">
+                        <a href="{{pageitem.librisitem.librisinstancelink}}" target="_blank">{{i + 1 + '. ' +
+                            pageitem.librisitem.title}} <i class="material-icons md-14">launch</i>
+                        </a>
                     </mat-card-title>
                 </mat-card-header>
-                <mat-card-content *ngIf="librisitem.librisid !=''">
-                    <i><span translate>Translate.idlabel</span> {{librisitem.librisid}}</i>
+                <mat-card-content *ngIf="pageitem.librisitem.librisid !=''">
+                    <i><span translate>Translate.idlabel</span> {{pageitem.librisitem.librisid}}</i>
                 </mat-card-content>
-                <mat-card-content *ngIf="!librisitem.librisinstance">
-                    {{librisitem.errormessage}}
-                </mat-card-content>   
-                <mat-card-content *ngIf="librisitem.librisholdings.length > 0 && librisitem.librisinstance">
-                    <div *ngFor="let librisholding of librisitem.librisholdings">
+                <mat-card-content *ngIf="!pageitem.librisitem.librisinstance">
+                    {{pageitem.librisitem.errormessage}}
+                </mat-card-content>
+                <mat-card-content
+                    *ngIf="pageitem.librisitem.librisholdings.length > 0 && pageitem.librisitem.librisinstance">
+                    <div *ngFor="let librisholding of pageitem.librisitem.librisholdings">
                         <div *ngFor="let sigel of sigels | keyvalue">
                             <div *ngIf="sigel.value.sigel == librisholding.sigel">
                                 <h3>{{sigel.value.libraryname}} ({{sigel.value.sigel}})</h3>
                             </div>
                         </div>
-                        <div *ngIf="librisholding.shelves" style="padding-left: 0px; padding-bottom: 10px">
-                            <div *ngFor="let shelve of librisholding.shelves">
-                                <i translate>Translate.locationtext </i>{{shelve.name}}
+                        <div *ngIf="librisholding.marc_852">
+                            <div *ngFor="let marc852 of librisholding.marc_852;index as i"
+                                style="padding-left: 0px; padding-bottom: 20px">
+                                <div *ngIf="marc852.c != '' || marc852.h != ''  || marc852.j != ''  || marc852.l != '' || marc852.t != '' || marc852.i != '' ; else elseBlock"
+                                    style="padding-left: 0px; padding-bottom: 5px">
+                                    <div>
+                                        <i translate>Translate.locationtext </i>
+                                        <span *ngIf="marc852.c != ''"><b>c#</b> {{marc852.c}} </span>
+                                        <span *ngIf="marc852.h != ''"><b>h#</b> {{marc852.h}} </span>
+                                        <span *ngIf="marc852.j != ''"><b>j#</b> {{marc852.j}} </span>
+                                        <span *ngIf="marc852.l != ''"><b>l#</b> {{marc852.l}} </span>
+                                        <span *ngIf="marc852.t != ''"><b>t#</b> {{marc852.t}} </span>
+                                        <span *ngIf="marc852.i != ''"><b>i#</b> {{marc852.i}} </span>
+                                        <span *ngIf="marc852['8'] != ''"><b>8#</b> {{marc852['8']}} </span>
+                                    </div>
+                                </div>
+                                <ng-template #elseBlock>Det finns ett tomt bestånd i Libris</ng-template>
                             </div>
-                        </div>
-                        <div *ngIf="librisholding.otherinfo" style="padding-left: 0px; padding-bottom: 10px">
-                            <i translate>Translate.otherinfotext </i>{{librisholding.otherinfo}}
-                        </div>
-                        <div *ngIf="librisholding.link != '#'" style="padding-left: 0px; padding-bottom: 10px">
-                            <a href="{{librisholding.link}}" target="_blank" translate>Translate.librisholdingslinktext <i class="material-icons md-14">launch</i></a>
+                            <div *ngIf="librisholding.otherinfo" style="padding-left: 0px; padding-bottom: 10px">
+                                <i translate>Translate.otherinfotext </i>{{librisholding.otherinfo}}
+                            </div>
+                            <div *ngIf="librisholding.link != '#'" style="padding-left: 0px; padding-bottom: 10px">
+                                <a href="{{librisholding.link}}" target="_blank"
+                                    translate>Translate.librisholdingslinktext
+                                    <i class="material-icons md-14">launch</i>
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </mat-card-content>
-                <mat-card-content *ngIf="librisitem.librisholdings.length == 0 && librisitem.librisinstance">
-                        <i class="material-icons md-30 icon-red">error</i> {{librisitem.errormessage}}
+                <mat-card-content
+                    *ngIf="pageitem.librisitem.librisholdings.length == 0 && pageitem.librisitem.librisinstance">
+                    <i class="material-icons md-30 icon-red">error</i> {{pageitem.librisitem.errormessage}}
                 </mat-card-content>
             </mat-card>
         </div>

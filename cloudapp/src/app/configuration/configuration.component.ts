@@ -129,25 +129,42 @@ export class ConfigurationComponent implements OnInit {
       ()  => this.saving = false
     );
   }
+
   remove(removableLibrisSigelTemplate: LibrisSigelTemplate) {
     this.configuration.LibrisSigelTemplate = this.configuration.LibrisSigelTemplate.filter(LibrisSigelTemplate => LibrisSigelTemplate.id != removableLibrisSigelTemplate.id);
     this.saveConfig('Template: ' + removableLibrisSigelTemplate.sigel + ' removed from config.');
   }
 
-  openDialog() {
+  update(removableLibrisSigelTemplate: LibrisSigelTemplate) {
+    this.configuration.LibrisSigelTemplate = this.configuration.LibrisSigelTemplate.filter(LibrisSigelTemplate => LibrisSigelTemplate.id == removableLibrisSigelTemplate.id);
+    this.saveConfig('Template: ' + removableLibrisSigelTemplate.sigel + ' updated in config.');
+  }
+
+  openDialog(action, item = new LibrisSigelTemplate()) {
     this.dialogOpen = true;
-    const dialogRef = this.dialog.open(ConfigurationDialogComponent, {
-      width: '95%',
-      data: new LibrisSigelTemplate()
-    });
+
+    let dialogRef: any;
+      dialogRef = this.dialog.open(ConfigurationDialogComponent, {
+        width: '95%',
+        data: item
+      });
 
     dialogRef.afterClosed().subscribe(result  => {
       result = result as LibrisSigelTemplate;
       this.dialogOpen = false;
       const readyForSaving =result.sigel != ''
       if (readyForSaving) {
-        this.configuration.LibrisSigelTemplate.push(result);
-        this.saveConfig('Sigel: ' + result.sigel + ' saved to config.');
+        //edit eller add?
+        if(action === "add") {
+          this.configuration.LibrisSigelTemplate.push(result);
+          this.saveConfig('Sigel: ' + result.sigel + ' saved to config.');
+        } 
+        if(action === "edit") {
+          this.configuration.LibrisSigelTemplate = this.configuration.LibrisSigelTemplate.filter(LibrisSigelTemplate => LibrisSigelTemplate.id != result.id);
+          this.configuration.LibrisSigelTemplate.push(result);
+          this.saveConfig('Sigel: ' + result.sigel + ' saved to config.');
+        }
+        
       }
     });
 

@@ -6,7 +6,7 @@
         "Intro": "För aktuell vy med bibliografiska poster (tryckt material) visas motsvarande bestånd från Libris.",
         "idlabel": "Bestånd för ID",
         "librisholdingslinktext" : "Beståndspost i Libris katalogisering",
-        "locationtext" : "Placering:",
+        "locationtext" : "Placering(852):",
         "otherinfotext" : "Övrig Beståndsinfo:",
         "notitlesinfo": "Gå till titel/titlar för att se bestånd i Libris.",
         "noconfiginfo": "Appen är inte korrekt konfigurerad, kontakta administratör",

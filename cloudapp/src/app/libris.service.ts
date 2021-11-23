@@ -17,6 +17,15 @@ export class LibrisService {
         });
     }
 
+    /**
+     * Funktion som skapar rätt Libris-url
+     * beroende på vilken typ av Libris-identifierare(i 035) en post har i Alma
+     * 
+     * @param librisid 
+     * @param librisidtype 
+     * @param proxyURL 
+     * @returns 
+     */
     librisurl = (librisid: string, librisidtype: string, proxyURL: string) => {
         if (librisidtype == 'libris3') {
             return `${proxyURL}/find.jsonld?meta.identifiedBy.@type=LibrisIIINumber&meta.identifiedBy.value=${librisid}`;
@@ -25,6 +34,14 @@ export class LibrisService {
         }
     }
 
+    /**
+     * Funktion som hämtar huvudinstansen i Libris via id
+     * 
+     * @param id 
+     * @param type 
+     * @param url 
+     * @returns 
+     */
     getLibrisInstance(id, type, url) {
         var res = this.http.get<any>(this.librisurl(id, type, url), {})
         return res
@@ -102,7 +119,7 @@ export class LibrisService {
       * @param index 
       * @param sigelarray 
       */
-    async getLibrisItem(librisobject, librisid, bib, index, sigels) {
+    async getLibrisItem(librisobject, librisid, bib, sigels) {
         let title: string = ""
         let librisinstance: boolean = false;
         let librisinstancelink: string = "#"
@@ -113,8 +130,8 @@ export class LibrisService {
         let sigelmatch: boolean = false
         let librisresult: any;
         let librisholdingslink: string;
-        let shelves: any;
         let librisitem: any;
+
         if(bib.title) {
             title = bib.title;
         }
@@ -141,92 +158,180 @@ export class LibrisService {
                             row => {
                                 return row.sigel == librisobject.items[i]['@reverse'].itemOf[j].heldBy['@id'].substring(librisobject.items[i]['@reverse'].itemOf[j].heldBy['@id'].lastIndexOf("/") + 1)
                                 }
-                            )
-                        ) {
+                        )) {
                             sigelmatch = true;
-                            librisresult = await this.http.get<any>(librisobject.items[i]['@reverse'].itemOf[j]['@id'].replace('#it','') + '/data.jsonld', {}).toPromise()
+                            librisresult = await this.http.get<any>(
+                                librisobject.items[i]['@reverse'].itemOf[j]['@id'].replace('#it','') + '/data.jsonld', {})
+                                .toPromise()
                             
                             librisholdings[holdingsindex] = {}
                             lastslash = librisobject.items[i]['@reverse'].itemOf[j].heldBy['@id'].lastIndexOf("/")
+                            
+                            //Sigel
                             librisholdings[holdingsindex].sigel= librisobject.items[i]['@reverse'].itemOf[j].heldBy['@id'].substring(lastslash+1)
                             
                             lastslash = librisresult.mainEntity['@id'].lastIndexOf("/");
                             librisholdingslink = librisresult.mainEntity['@id'].substring(0,lastslash)+"/katalogisering" + librisresult.mainEntity['@id'].substring(lastslash);
+                            
+                            //Länk till post i Libris katalogisering
                             librisholdings[holdingsindex].link = librisholdingslink
-                            shelves = []
 
-                            let tempstringarr:any
+                            //Skapa ett 852-fält
+                            librisholdings[holdingsindex].marc_852 = []
+                            let tempstring = "";
+
+                            //Det finns två olika typer i Libris
+                            //Antingen "hasComponent" där det finns flera items på samma holding.
                             if (librisresult.mainEntity.hasComponent) {
-                                for (let k=0;k<librisresult.mainEntity.hasComponent.length;k++) {
-                                    tempstringarr = []
-                                    shelves[k] = {}
+                                for (let k = 0; k < librisresult.mainEntity.hasComponent.length; k++) {
+                                    
+                                    librisholdings[holdingsindex].marc_852[k] = {}
+
+                                    //852 #8 LÄNK- OCH SEKVENSNUMMER
+                                    librisholdings[holdingsindex].marc_852[k]["8"] = "";
+                                    if (librisresult.mainEntity["marc:groupid"]) {
+                                        librisholdings[holdingsindex].marc_852[k]["8"] = librisresult.mainEntity["marc:groupid"]
+                                    }
+
+                                    //852 #b SIGEL
+                                    librisholdings[holdingsindex].marc_852[k].b = librisholdings[holdingsindex].sigel
+
+                                    //852 #c SAMLING
+                                    librisholdings[holdingsindex].marc_852[k].c = "";
                                     if (librisresult.mainEntity.hasComponent[k].physicalLocation) {
-                                        tempstringarr.push(librisresult.mainEntity.hasComponent[k].physicalLocation[0])
+                                        for (let l = 0; l < librisresult.mainEntity.hasComponent[k].physicalLocation.length; l++) {
+                                            tempstring += librisresult.mainEntity.hasComponent[k].physicalLocation[l] + " ";
+                                        }
+                                        librisholdings[holdingsindex].marc_852[k].c = tempstring;
                                     }
+                                    //852 #h HYLLKOD
+                                    librisholdings[holdingsindex].marc_852[k].h = "";
                                     if (librisresult.mainEntity.hasComponent[k].shelfMark) {
-                                        tempstringarr.push(librisresult.mainEntity.hasComponent[k].shelfMark.label)
+                                        tempstring = "";
+
+                                        if (Array.isArray(librisresult.mainEntity.hasComponent[k].shelfMark)) {
+                                            for (let l = 0; l < librisresult.mainEntity.hasComponent[k].shelfMark.length; l++) {
+                                                if (Array.isArray(librisresult.mainEntity.hasComponent[k].shelfMark[l].label)) {
+                                                    tempstring += librisresult.mainEntity.hasComponent[k].shelfMark[l].label[0];
+                                                } else {
+                                                    tempstring += librisresult.mainEntity.hasComponent[k].shelfMark[l].label;
+                                                }
+                                            }
+                                            librisholdings[holdingsindex].marc_852[k].h = tempstring;
+                                        } else {
+                                            if (Array.isArray(librisresult.mainEntity.hasComponent[k].shelfMark.label)) {
+                                                librisholdings[holdingsindex].marc_852[k].h = librisresult.mainEntity.hasComponent[k].shelfMark.label[0];
+                                            } else {
+                                                librisholdings[holdingsindex].marc_852[k].h = librisresult.mainEntity.hasComponent[k].shelfMark.label;
+                                            }
+                                        }
                                     }
+                                    //852 #j LÖPNUMMER
+                                    librisholdings[holdingsindex].marc_852[k].j = "";
                                     if (librisresult.mainEntity.hasComponent[k].shelfControlNumber) {
-                                        tempstringarr.push(librisresult.mainEntity.hasComponent[k].shelfControlNumber)
+                                        librisholdings[holdingsindex].marc_852[k].j = librisresult.mainEntity.hasComponent[k].shelfControlNumber;
                                     }
+                                    //852 #l UPPSTÄLLNINGSORD
+                                    librisholdings[holdingsindex].marc_852[k].l = "";
                                     if (librisresult.mainEntity.hasComponent[k].shelfLabel) {
-                                        tempstringarr.push(librisresult.mainEntity.hasComponent[k].shelfLabel)
+                                        librisholdings[holdingsindex].marc_852[k].l = librisresult.mainEntity.hasComponent[k].shelfLabel;
                                     }
+                                    //852 #t EXEMPLARNUMMER
+                                    librisholdings[holdingsindex].marc_852[k].t = "";
                                     if (librisresult.mainEntity.hasComponent[k].copyNumber) {
-                                        tempstringarr.push(librisresult.mainEntity.hasComponent[k].copyNumber)
+                                        librisholdings[holdingsindex].marc_852[k].t = librisresult.mainEntity.hasComponent[k].copyNumber;
                                     }
+                                    //852 #i EXEMPLARSTATUS
+                                    librisholdings[holdingsindex].marc_852[k].i = "";
                                     if (librisresult.mainEntity.hasComponent[k].availability) {
-                                        tempstringarr.push(librisresult.mainEntity.hasComponent[k].availability[0].label[0])
+                                        librisholdings[holdingsindex].marc_852[k].i = librisresult.mainEntity.hasComponent[k].availability[0].label;
                                     }
-                                    if(tempstringarr.length == 0) {
-                                        tempstringarr.push("Saknas")
-                                    }
-                                    shelves[k].name = tempstringarr.join(' | ');
                                 }
                             } else {
-                                tempstringarr = []
-                                shelves[0] = {}
-                                if (librisresult.mainEntity.physicalLocation) {
-                                    tempstringarr.push(librisresult.mainEntity.physicalLocation[0])
-                                }
-                                if (librisresult.mainEntity.shelfMark) {
-                                    tempstringarr.push(librisresult.mainEntity.shelfMark.label)
-                                }
-                                if (librisresult.mainEntity.shelfControlNumber) {
-                                    tempstringarr.push(librisresult.mainEntity.shelfControlNumber)
-                                }
-                                if (librisresult.mainEntity.shelfLabel) {
-                                    tempstringarr.push(librisresult.mainEntity.shelfLabel)
-                                }
-                                if (librisresult.mainEntity.copyNumber) {
-                                    tempstringarr.push(librisresult.mainEntity.copyNumber)
-                                }
-                                if (librisresult.mainEntity.availability) {
-                                    tempstringarr.push(librisresult.mainEntity.availability[0].label[0])
-                                }
-                                if(tempstringarr.length == 0) {
-                                    tempstringarr.push("Saknas")
-                                }
-                                shelves[0].name = tempstringarr.join(' | ');
-                            }
-                            librisholdings[holdingsindex].shelves = shelves
+                            //Eller poster med endast ett item per holding.
+                                tempstring = "";
+                                librisholdings[holdingsindex].marc_852[0] = {}
 
-                            tempstringarr = []
-                            if(librisresult.mainEntity["marc:hasTextualHoldingsBasicBibliographicUnit"]) {
-                                for(let l=0;l<librisresult.mainEntity["marc:hasTextualHoldingsBasicBibliographicUnit"].length;l++) {
-                                    if(librisresult.mainEntity["marc:hasTextualHoldingsBasicBibliographicUnit"][l]["marc:publicNote"]) {
-                                        tempstringarr.push(librisresult.mainEntity["marc:hasTextualHoldingsBasicBibliographicUnit"][l]["marc:publicNote"][0]);
+                                //852 #8 LÄNK- OCH SEKVENSNUMMER
+                                librisholdings[holdingsindex].marc_852[0]["8"] = "";
+                                if (librisresult.mainEntity["marc:groupid"]) {
+                                    librisholdings[holdingsindex].marc_852[0]["8"] = librisresult.mainEntity["marc:groupid"]
+                                }
+
+                                //852 #b SIGEL
+                                librisholdings[holdingsindex].marc_852[0].b = librisholdings[holdingsindex].sigel
+
+                                //852 #c SAMLING
+                                librisholdings[holdingsindex].marc_852[0].c = "";
+                                if (librisresult.mainEntity.physicalLocation) {
+                                    for (let l = 0; l < librisresult.mainEntity.physicalLocation.length; l++) {
+                                        tempstring += librisresult.mainEntity.physicalLocation[l] + " ";
                                     }
-                                    if(librisresult.mainEntity["marc:hasTextualHoldingsBasicBibliographicUnit"][l]["marc:textualString"]) {
-                                        tempstringarr.push(librisresult.mainEntity["marc:hasTextualHoldingsBasicBibliographicUnit"][l]["marc:textualString"]);
+                                    librisholdings[holdingsindex].marc_852[0].c = tempstring;
+                                }
+                                //852 #h HYLLKOD
+                                librisholdings[holdingsindex].marc_852[0].h = "";
+                                if (librisresult.mainEntity.shelfMark) {
+                                    tempstring = ""
+                                    
+                                    if (Array.isArray(librisresult.mainEntity.shelfMark)) {
+                                        for (let l = 0; l < librisresult.mainEntity.shelfMark.length; l++) {
+                                            if (Array.isArray(librisresult.mainEntity.shelfMark[l].label)) {
+                                                tempstring += librisresult.mainEntity.shelfMark[l].label[0] + " ";
+                                            } else {
+                                                tempstring += librisresult.mainEntity.shelfMark[l].label + " ";
+                                            } 
+                                        }
+                                        librisholdings[holdingsindex].marc_852[0].h = tempstring;
+                                    } else {
+                                        if (Array.isArray(librisresult.mainEntity.shelfMark.label)) {
+                                            librisholdings[holdingsindex].marc_852[0].h = librisresult.mainEntity.shelfMark.label[0] + " ";
+                                        } else {
+                                            librisholdings[holdingsindex].marc_852[0].h = librisresult.mainEntity.shelfMark.label + " ";
+                                        }
+                                    }
+                                }
+                                //852 #j LÖPNUMMER
+                                librisholdings[holdingsindex].marc_852[0].j = "";
+                                if (librisresult.mainEntity.shelfControlNumber) {
+                                    librisholdings[holdingsindex].marc_852[0].j = librisresult.mainEntity.shelfControlNumber;
+                                }
+                                //852 #l UPPSTÄLLNINGSORD
+                                librisholdings[holdingsindex].marc_852[0].l = "";
+                                if (librisresult.mainEntity.shelfLabel) {
+                                    librisholdings[holdingsindex].marc_852[0].l = librisresult.mainEntity.shelfLabel;
+                                }
+                                //852 #t EXEMPLARNUMMER
+                                librisholdings[holdingsindex].marc_852[0].t = "";
+                                if (librisresult.mainEntity.copyNumber) {
+                                    librisholdings[holdingsindex].marc_852[0].t = librisresult.mainEntity.copyNumber;
+                                }
+                                //852 #i EXEMPLARSTATUS
+                                librisholdings[holdingsindex].marc_852[0].i = "";
+                                if (librisresult.mainEntity.availability) {
+                                    librisholdings[holdingsindex].marc_852[0].i = librisresult.mainEntity.availability[0].label;
+                                }
+                            }
+
+                            tempstring = ""
+                            //Hämta in övriga intressant informationsfält.
+                            if (librisresult.mainEntity["marc:hasTextualHoldingsBasicBibliographicUnit"]) {
+                                for (let l = 0; l < librisresult.mainEntity["marc:hasTextualHoldingsBasicBibliographicUnit"].length; l++) {
+                                    if (librisresult.mainEntity["marc:hasTextualHoldingsBasicBibliographicUnit"][l]["marc:publicNote"]) {
+                                        tempstring += librisresult.mainEntity["marc:hasTextualHoldingsBasicBibliographicUnit"][l]["marc:publicNote"][0] + " | ";
+                                    }
+                                    if (librisresult.mainEntity["marc:hasTextualHoldingsBasicBibliographicUnit"][l]["marc:textualString"]) {
+                                        tempstring += librisresult.mainEntity["marc:hasTextualHoldingsBasicBibliographicUnit"][l]["marc:textualString"] + " | ";
                                     }
                                 }
                             }
-                            librisholdings[holdingsindex].otherinfo = tempstringarr.join(' | ');
+                            librisholdings[holdingsindex].otherinfo = tempstring;
+
                             holdingsindex++
                         }
                     }
                 }
+                            
                 if (!sigelmatch) {
                     librisholdings=[];
                     errormessage = this.translate.instant('Translate.noholdingsfound');
@@ -234,6 +339,7 @@ export class LibrisService {
                 break;
             }
         }
+
         if (!librisinstance) {
             librisholdings=[];
             errormessage = this.translate.instant('Translate.notitlefound');
@@ -241,7 +347,6 @@ export class LibrisService {
 
         librisholdings = this.sort_by_key(librisholdings,"sigel")
         librisitem = { 
-            "index": index,
             "title": title,
             "librisid": librisid,
             "librisinstance": librisinstance,
