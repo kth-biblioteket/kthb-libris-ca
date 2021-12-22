@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from "@angular/common/http";
+import { HttpClient, HttpHeaders } from "@angular/common/http";
 import { catchError } from 'rxjs/operators'; 
 import { TranslateService } from '@ngx-translate/core';
 
@@ -160,10 +160,19 @@ export class LibrisService {
                                 }
                         )) {
                             sigelmatch = true;
+
+                            const httpOptions = {
+                                headers: new HttpHeaders({
+                                    'Accept':  'application/json+ld',
+                                })
+                            };
+
                             librisresult = await this.http.get<any>(
-                                librisobject.items[i]['@reverse'].itemOf[j]['@id'].replace('#it','') + '/data.jsonld', {})
+                                librisobject.items[i]['@reverse'].itemOf[j]['@id'].replace('#it','') + '/data.jsonld?embellished=false', httpOptions)
                                 .toPromise()
                             
+                            librisresult.mainEntity = librisresult['@graph'][1]
+
                             librisholdings[holdingsindex] = {}
                             lastslash = librisobject.items[i]['@reverse'].itemOf[j].heldBy['@id'].lastIndexOf("/")
                             
