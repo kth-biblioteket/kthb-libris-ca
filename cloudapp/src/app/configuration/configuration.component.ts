@@ -10,7 +10,6 @@ import { CanActivate, Router,
 import { Observable, iif, of } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
 import { ErrorMessages } from '../static/error.component';
-import {ToastrService} from 'ngx-toastr';
 import {Configuration} from '../models/configuration';
 import {LibrisSigelTemplate} from "../models/libris-sigel-template";
 import {MatDialog} from "@angular/material/dialog";
@@ -33,7 +32,6 @@ export class ConfigurationComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private configService: CloudAppConfigService,
-    private toastr: ToastrService,
     private alert: AlertService,
     public dialog: MatDialog,
     private router: Router
@@ -93,9 +91,9 @@ export class ConfigurationComponent implements OnInit {
     this.saving = true;
     this.configService.set(this.configuration).subscribe(
         response => {
-            this.toastr.success(toastMessage);
+            this.alert.success(toastMessage);
         },
-        err => this.toastr.error(err.message),
+        err => this.alert.error(err.message),
         () => this.saving = false
     );
     this.saving = false;
@@ -107,7 +105,7 @@ export class ConfigurationComponent implements OnInit {
     this.configuration.librisUrl = this.form.value.librisUrl
     this.configService.set(this.configuration).subscribe(
       () => {
-        this.toastr.success('Configuration successfully saved.')
+        this.alert.success('Configuration successfully saved.')
         this.form.markAsPristine();
       },
       err => this.alert.error(err.message),
@@ -118,7 +116,7 @@ export class ConfigurationComponent implements OnInit {
   resetconfiguration() {
     this.configService.set([]).subscribe(
       () => {
-        this.toastr.success('Configuration successfully reset.')
+        this.alert.success('Configuration successfully reset.')
         this.configuration.proxyUrl = "";
         this.configuration.librisUrl = "";
         this.configuration.LibrisSigelTemplate = [];

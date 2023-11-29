@@ -1,5 +1,5 @@
 import { Subscription, throwError } from 'rxjs';
-import { ToastrService } from 'ngx-toastr';
+import { AlertService } from '@exlibris/exl-cloudapp-angular-lib';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { 
   CloudAppConfigService, 
@@ -48,7 +48,7 @@ export class MainComponent implements OnInit, OnDestroy {
     private eventsService: CloudAppEventsService,
     private appService: AppService,
     private translate: TranslateService,
-    private toastr: ToastrService,
+    private alert: AlertService,
     private librisservice: LibrisService
     ) { } 
 
@@ -65,7 +65,7 @@ export class MainComponent implements OnInit, OnDestroy {
       map(conf=>{
         if (!conf.librisUrl || !conf.LibrisSigelTemplate) {
           this.configmissing = true
-          this.toastr.error(this.translate.instant('Translate.noconfiginfo'))
+          this.alert.error(this.translate.instant('Translate.noconfiginfo'))
         } else {
           this.config = conf;
           this.sigels = this.config.LibrisSigelTemplate;
@@ -174,7 +174,7 @@ export class MainComponent implements OnInit, OnDestroy {
                 }
 
                 //Om det finns en koppling till Libris
-                if (librisarr[0] != "") {
+                if (librisarr && typeof librisarr[0] !== "undefined" && librisarr[0] !== "") {
                   //hämta librisinstans utirån 035-id
                   try {
                     let lib = await this.librisservice
@@ -210,7 +210,7 @@ export class MainComponent implements OnInit, OnDestroy {
                   this.pageitems[index].librisitem = {
                     index: index,
                     title: bib.title,
-                    librisid: librisarr[0],
+                    librisid: "",
                     librisinstance: false,
                     librisinstancelink: "#",
                     librisholdings: [],

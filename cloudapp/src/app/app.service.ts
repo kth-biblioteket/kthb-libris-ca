@@ -7,6 +7,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
     providedIn: 'root'
 })
 export class AppService {
+
     private title = new BehaviorSubject<String>('App title');
     private title$ = this.title.asObservable();
 

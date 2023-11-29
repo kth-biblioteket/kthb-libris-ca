@@ -4,7 +4,6 @@ import { MainComponent } from './main/main.component';
 import { ConfigurationComponent, ConfigurationGuard } from './configuration/configuration.component';
 import { HelpComponent } from './help/help.component';
 
-
 const routes: Routes = [
   { path: '', component: MainComponent },
   { path: 'configuration', component: ConfigurationComponent, canActivate: [ConfigurationGuard] },
@@ -16,4 +15,3 @@ const routes: Routes = [
   exports: [RouterModule]
 })
 export class AppRoutingModule { }
-
