@@ -3,7 +3,7 @@
    "title": "Libris Holdings",
    "subtitle": "For the current view of bibliographic records (printed materials) in Alma the app displays corresponding holdings from the Swedish union catalog Libris.",
    "author": "Thomas Lind, KTH Library",
-   "description": "This app is applicable for the Swedish libraries. It show the Libris Holdings for each item in Alma. This is a Beta version!",
+   "description": "This app is applicable for the Swedish libraries. It show the Libris Holdings for each item in Alma",
    "contentSecurity": {
       "connectSrc": [
          "self",

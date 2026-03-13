@@ -104,7 +104,11 @@ export class MainComponent implements OnInit, OnDestroy {
         this.subscription$.unsubscribe();
       }
 
-      this.entities = (pageInfo.entities||[])
+      this.entities = (pageInfo.entities || []).sort((a, b) => {
+        const descA = a.description || "";
+        const descB = b.description || "";
+        return descA.localeCompare(descB, 'sv'); // 'sv' för svenska alfabetiska regler
+      });
 
       //Kör bara om poster som visas i Alma är items eller bibs eller holdings
       if ( this.entities.length > 0 && (this.entities[0].type == "BIB_MMS" || this.entities[0].type == "ITEM" || this.entities[0].type == "HOLDING")) {      

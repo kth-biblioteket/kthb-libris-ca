@@ -142,7 +142,9 @@ export class LibrisService {
             if((librisobject.items[i]['@type'] == 'Instance' 
                 || librisobject.items[i]['@type'] == 'Electronic'
                 || librisobject.items[i]['@type'] == 'Print'
-                || librisobject.items[i]['@type'] == 'TextInstance' )
+                || librisobject.items[i]['@type'] == 'TextInstance'
+                || librisobject.items[i]['@type'] == 'PhysicalResource'
+                || librisobject.items[i]['@type'] == 'Item' )
                 && typeof librisobject.items[i]['@reverse'] !== 'undefined') {
                 librisinstance = true; 
                 lastslash = librisobject.items[i]['@id'].lastIndexOf("/");
