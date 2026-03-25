@@ -28,6 +28,7 @@ export class MainComponent implements OnInit, OnDestroy {
   app_errormessage: string;
 
   entities: Entity[];
+  selectedEntity: Entity;
   pageitems: any;
   hasAlmaApiResult: boolean = false;
   
@@ -104,12 +105,19 @@ export class MainComponent implements OnInit, OnDestroy {
         this.subscription$.unsubscribe();
       }
 
-      this.entities = (pageInfo.entities || []).sort((a, b) => {
-        const descA = a.description || "";
-        const descB = b.description || "";
-        return descA.localeCompare(descB, 'sv'); // 'sv' för svenska alfabetiska regler
-      });
+      const incoming = pageInfo.entities || [];
+      if (incoming.length === 0) return;
 
+      const isBookClick = this.entities && 
+                        this.entities.length > 0 && 
+                        this.entities.some(e => e.id === incoming[0].id);
+
+      //Hämta bara ny om det inte är klick på en post.
+      if (!isBookClick) {
+          this.entities = [...incoming];
+      }
+      this.selectedEntity = incoming[0]; 
+      
       //Kör bara om poster som visas i Alma är items eller bibs eller holdings
       if ( this.entities.length > 0 && (this.entities[0].type == "BIB_MMS" || this.entities[0].type == "ITEM" || this.entities[0].type == "HOLDING")) {      
   
