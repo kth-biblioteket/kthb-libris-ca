@@ -58,7 +58,7 @@
                                         <span *ngIf="marc852['8'] != ''"><b>8#</b> {{marc852['8']}} </span>
                                     </div>
                                     <div>
-                                        <span *ngIf="marc852.otherinfo != ''"><i translate>Translate.otherinfotext </i> {{marc852.otherinfo}} </span>
+                                        <span *ngIf="marc852.otherinfo && marc852.otherinfo != ''"><i translate>Translate.otherinfotext </i>{{marc852.otherinfo}}</span>
                                     </div>
                                 </div>
                                 <ng-template #elseBlock>Det finns ett tomt bestånd i Libris</ng-template>
