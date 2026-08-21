@@ -257,6 +257,20 @@ export class LibrisService {
                                     if (librisresult.mainEntity.hasComponent[k].availability) {
                                         librisholdings[holdingsindex].marc_852[k].i = librisresult.mainEntity.hasComponent[k].availability[0].label;
                                     }
+
+                                    // 852 otherinfo
+                                    librisholdings[holdingsindex].marc_852[k].otherinfo = "";
+                                    
+                                    if (librisresult.mainEntity.hasComponent[k]["marc:hasTextualHoldingsBasicBibliographicUnit"]) {
+                                        for (let l = 0; l < librisresult.mainEntity.hasComponent[k]["marc:hasTextualHoldingsBasicBibliographicUnit"].length; l++) {
+                                            if (librisresult.mainEntity.hasComponent[k]["marc:hasTextualHoldingsBasicBibliographicUnit"][l]["marc:publicNote"]) {
+                                                librisholdings[holdingsindex].marc_852[k].otherinfo += librisresult.mainEntity.hasComponent[k]["marc:hasTextualHoldingsBasicBibliographicUnit"][l]["marc:publicNote"][0] + " | ";
+                                            }
+                                            if (librisresult.mainEntity.hasComponent[k]["marc:hasTextualHoldingsBasicBibliographicUnit"][l]["marc:textualString"]) {
+                                                librisholdings[holdingsindex].marc_852[k].otherinfo += librisresult.mainEntity.hasComponent[k]["marc:hasTextualHoldingsBasicBibliographicUnit"][l]["marc:textualString"] + " | ";
+                                            }
+                                        }
+                                    }
                                 }
                             } else {
                             //Eller poster med endast ett item per holding.
