@@ -10,11 +10,22 @@ export interface LibrisItem {
 
 export interface LibrisHolding {
     sigel: string;
-    shelves: Shelve[];
+    marc_852: Marc852[];
     otherinfo: string;
     link: string;
+    holdingurl: string;
+    etag: string;
+    holdinggraph: any;
  }
 
- export interface Shelve {
-    name: string;
+ export interface Marc852 {
+    '8': string;
+    b: string;
+    c: string;
+    h: string;
+    j: string;
+    l: string;
+    t: string;
+    i: string;
+    otherinfo?: string;
  }

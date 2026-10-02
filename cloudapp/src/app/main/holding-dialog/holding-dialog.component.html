@@ -1,0 +1,66 @@
+<h2 mat-dialog-title *ngIf="isForm">
+  {{ (preview ? 'Translate.holding_previewtitle' : (mode == 'create' ? 'Translate.holding_createdialogtitle' : (mode == 'add' ? 'Translate.holding_adddialogtitle' : 'Translate.holding_editdialogtitle'))) | translate }}<span *ngIf="mode != 'create'"> – {{libraryname}} ({{holding.sigel}})</span>
+</h2>
+<h2 mat-dialog-title *ngIf="mode == 'delete'">
+  {{ 'Translate.holding_deletedialogtitle' | translate }} – {{libraryname}} ({{holding.sigel}})
+</h2>
+<h2 mat-dialog-title *ngIf="mode == 'deleteRow'">
+  {{ 'Translate.holding_deleterowdialogtitle' | translate }} – {{libraryname}} ({{holding.sigel}})
+</h2>
+
+<mat-dialog-content>
+  <div *ngIf="mode == 'create' && !preview" style="padding-bottom: 10px">
+    <label>{{ 'Translate.holding_choosesigel' | translate }}</label><br>
+    <select [(ngModel)]="selectedSigel" name="sigel" style="min-width: 220px; padding: 4px">
+      <option value="" disabled>{{ 'Translate.holding_choosesigel' | translate }}</option>
+      <option *ngFor="let option of sigeloptions" [value]="option.sigel">{{option.libraryname}} ({{option.sigel}})</option>
+    </select>
+  </div>
+  <p *ngIf="mode == 'create' && preview"><b>{{ 'Translate.holding_sigel' | translate }}:</b> {{selectedSigel}}</p>
+
+  <div *ngIf="isForm && !preview">
+    <div *ngFor="let row of edited; index as k" style="padding-bottom: 10px">
+      <mat-form-field *ngFor="let field of ['c','h','j','l','t','i']" style="width: 45%; margin-right: 8px">
+        <mat-label>{{field}}#</mat-label>
+        <input matInput [(ngModel)]="row[field]" [name]="field + k">
+      </mat-form-field>
+    </div>
+    <i *ngIf="mode == 'edit' && (holding.otherinfo || edited[0]?.otherinfo)">{{ 'Translate.holding_otherinfonote' | translate }}</i>
+  </div>
+
+  <div *ngIf="isForm && preview">
+    <p *ngIf="changes.length == 0">{{ 'Translate.holding_nochanges' | translate }}</p>
+    <table *ngIf="changes.length > 0">
+      <tr><th></th><th>{{ 'Translate.holding_before' | translate }}</th><th>{{ 'Translate.holding_after' | translate }}</th></tr>
+      <tr *ngFor="let change of changes">
+        <td><b>{{change.field}}#</b><span *ngIf="edited.length > 1"> ({{change.index + 1}})</span></td>
+        <td>{{change.before || ('Translate.holding_empty' | translate)}}</td>
+        <td>{{change.after || ('Translate.holding_empty' | translate)}}</td>
+      </tr>
+    </table>
+  </div>
+
+  <p *ngIf="mode == 'delete'">{{ 'Translate.holding_deleteconfirm' | translate }}</p>
+
+  <div *ngIf="mode == 'deleteRow'">
+    <p>{{ 'Translate.holding_deleterowconfirm' | translate }}</p>
+    <p>
+      <ng-container *ngFor="let field of ['c','h','j','l','t','i']">
+        <span *ngIf="row[field]"><b>{{field}}#</b> {{row[field]}} </span>
+      </ng-container>
+    </p>
+  </div>
+
+  <p *ngIf="error" class="icon-red">{{error}}</p>
+</mat-dialog-content>
+
+<mat-dialog-actions>
+  <button mat-button (click)="dialogRef.close()" [disabled]="busy">{{ 'Translate.holding_cancel' | translate }}</button>
+  <ng-container *ngIf="isForm">
+    <button mat-button *ngIf="!preview" color="primary" (click)="showPreview()" [disabled]="mode == 'create' && !selectedSigel">{{ 'Translate.holding_preview' | translate }}</button>
+    <button mat-button *ngIf="preview" (click)="preview = false" [disabled]="busy">{{ 'Translate.holding_back' | translate }}</button>
+    <button mat-flat-button *ngIf="preview" color="primary" (click)="save()" [disabled]="busy || changes.length == 0">{{ 'Translate.holding_save' | translate }}</button>
+  </ng-container>
+  <button mat-flat-button *ngIf="mode == 'delete'" color="warn" (click)="remove()" [disabled]="busy">{{ 'Translate.holding_remove' | translate }}</button>
+  <button mat-flat-button *ngIf="mode == 'deleteRow'" color="warn" (click)="removeRow()" [disabled]="busy">{{ 'Translate.holding_remove' | translate }}</button>
+</mat-dialog-actions>

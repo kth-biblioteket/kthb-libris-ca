@@ -1,6 +1,7 @@
 import { Subscription, throwError } from 'rxjs';
 import { AlertService } from '@exlibris/exl-cloudapp-angular-lib';
 import { Component, OnInit, OnDestroy } from '@angular/core';
+import { MatDialog } from '@angular/material/dialog';
 import { 
   CloudAppConfigService, 
   CloudAppRestService, 
@@ -12,6 +13,7 @@ import { AppService } from '../app.service';
 import { map, catchError } from 'rxjs/operators';
 import { LibrisService } from '../libris.service';
 import { LibrisItem } from '../models/librisitem';
+import { HoldingDialogComponent } from './holding-dialog/holding-dialog.component';
 
 @Component({
   selector: 'app-main',
@@ -50,7 +52,8 @@ export class MainComponent implements OnInit, OnDestroy {
     private appService: AppService,
     private translate: TranslateService,
     private alert: AlertService,
-    private librisservice: LibrisService
+    private librisservice: LibrisService,
+    private dialog: MatDialog
     ) { } 
 
   ngOnInit() {
@@ -197,6 +200,8 @@ export class MainComponent implements OnInit, OnDestroy {
                       )
                       .toPromise();
                     this.pageitems[index].librisinstance = lib;
+                    //Vilka sigel som sökts (för att veta var nya bestånd får läggas till)
+                    this.pageitems[index].searchedsigels = (sigeltolibris || []).filter(s => s);
                     //hämta librisitem utifrån librisid (från instans)
                     let librisitem = await this.librisservice.getLibrisItem(
                       lib, //librisinstansen
@@ -272,6 +277,139 @@ export class MainComponent implements OnInit, OnDestroy {
     if(this.subscription$) {
       this.subscription$.unsubscribe();
     }
+  }
+
+  /**
+   * Öppnar dialog för att redigera ett bestånd i Libris
+   * och uppdaterar visningen när det sparats.
+   */
+  editHolding(pageitem: any, holding: any, libraryname: string, rowIndex?: number) {
+    this.dialog
+      .open(HoldingDialogComponent, {
+        width: '400px',
+        data: { mode: 'edit', holding: holding, rowIndex: rowIndex, proxyUrl: this.config.proxyUrl, authToken: this.authToken, libraryname: libraryname }
+      })
+      .afterClosed()
+      .subscribe(result => {
+        if (result) {
+          //Enskild rad (result.marc_852 har då bara den raden) eller alla rader i beståndet
+          const first = result.rowIndex !== undefined ? result.rowIndex : 0;
+          const last = result.rowIndex !== undefined ? result.rowIndex : holding.marc_852.length - 1;
+          for (let k = first; k <= last; k++) {
+            const edited = result.marc_852[k - first];
+            this.librisservice.editableFields.forEach(f => holding.marc_852[k][f] = String(edited[f] ?? '').trim());
+          }
+          holding.holdinggraph = result.graph;
+          holding.etag = result.etag;
+          this.alert.success(this.translate.instant('Translate.holding_saved'));
+        }
+      });
+  }
+
+  /**
+   * Konfigurerade sigel som sökts på posten men som saknar bestånd, dvs där ett nytt bestånd kan skapas
+   */
+  getCreateOptions(pageitem: any) {
+    const existing = (pageitem.librisitem.librisholdings || []).map(h => h.sigel);
+    return (pageitem.searchedsigels || []).filter(s => !existing.includes(s.sigel));
+  }
+
+  /**
+   * Öppnar dialog för att skapa ett helt nytt bestånd (för ett bibliotek utan bestånd) på posten
+   */
+  createHolding(pageitem: any) {
+    this.dialog
+      .open(HoldingDialogComponent, {
+        width: '400px',
+        data: {
+          mode: 'create',
+          instanceid: pageitem.librisitem.instanceid,
+          sigeloptions: this.getCreateOptions(pageitem),
+          proxyUrl: this.config.proxyUrl, authToken: this.authToken
+        }
+      })
+      .afterClosed()
+      .subscribe(result => {
+        if (result && result.newHolding) {
+          const holdings = pageitem.librisitem.librisholdings;
+          holdings.push(result.newHolding);
+          this.librisservice.sort_by_key(holdings, 'sigel');
+          this.alert.success(this.translate.instant('Translate.holding_created'));
+        }
+      });
+  }
+
+  /**
+   * Öppnar dialog för att lägga till ett nytt exemplar (rad) i ett bestånd
+   */
+  addHoldingRow(holding: any, libraryname: string) {
+    this.dialog
+      .open(HoldingDialogComponent, {
+        width: '400px',
+        data: { mode: 'add', holding: holding, proxyUrl: this.config.proxyUrl, authToken: this.authToken, libraryname: libraryname }
+      })
+      .afterClosed()
+      .subscribe(result => {
+        if (result) {
+          const newRow = { '8': '', b: holding.sigel, otherinfo: '' };
+          this.librisservice.editableFields.forEach(f => newRow[f] = String(result.newRow[f] ?? '').trim());
+          if (result.replacedEmpty) {
+            holding.marc_852 = [newRow];
+          } else {
+            holding.marc_852.push(newRow);
+          }
+          holding.holdinggraph = result.graph;
+          holding.etag = result.etag;
+          this.alert.success(this.translate.instant('Translate.holding_added'));
+        }
+      });
+  }
+
+  getLibraryName(sigel: string) {
+    const found = (this.sigels || []).find(s => s.sigel == sigel);
+    return found ? found.libraryname : sigel;
+  }
+
+  /**
+   * Öppnar bekräftelsedialog för att ta bort ett enskilt exemplar (en rad) i ett bestånd
+   */
+  deleteHoldingRow(holding: any, rowIndex: number) {
+    this.dialog
+      .open(HoldingDialogComponent, {
+        width: '400px',
+        data: { mode: 'deleteRow', holding: holding, rowIndex: rowIndex, proxyUrl: this.config.proxyUrl, authToken: this.authToken, libraryname: this.getLibraryName(holding.sigel) }
+      })
+      .afterClosed()
+      .subscribe(result => {
+        if (result) {
+          holding.marc_852.splice(result.removedIndex, 1);
+          holding.holdinggraph = result.graph;
+          holding.etag = result.etag;
+          this.alert.success(this.translate.instant('Translate.holding_rowdeleted'));
+        }
+      });
+  }
+
+  /**
+   * Öppnar bekräftelsedialog för att ta bort ett bestånd i Libris
+   */
+  deleteHolding(pageitem: any, holding: any, libraryname: string) {
+    this.dialog
+      .open(HoldingDialogComponent, {
+        width: '400px',
+        data: { mode: 'delete', holding: holding, proxyUrl: this.config.proxyUrl, authToken: this.authToken, libraryname: libraryname }
+      })
+      .afterClosed()
+      .subscribe(result => {
+        if (result) {
+          const holdings = pageitem.librisitem.librisholdings;
+          holdings.splice(holdings.indexOf(holding), 1);
+          if (holdings.length == 0) {
+            pageitem.librisitem.errormessage = this.translate.instant('Translate.noholdingsfound');
+          }
+          this.alert.success(this.translate.instant('Translate.holding_deleted'));
+        }
+      });
   }
 
   setLang(lang: string) {

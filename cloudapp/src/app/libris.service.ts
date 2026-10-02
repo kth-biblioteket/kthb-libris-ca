@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from "@angular/common/http";
-import { catchError } from 'rxjs/operators'; 
 import { TranslateService } from '@ngx-translate/core';
 
 @Injectable()
@@ -28,6 +27,7 @@ export class LibrisService {
      */
     librisurl = (librisid: string, librisidtype: string, proxyURL: string) => {
         if (librisidtype == 'libris3') {
+            console.log(proxyURL );
             return `${proxyURL}/find.jsonld?meta.identifiedBy.@type=LibrisIIINumber&meta.identifiedBy.value=${librisid}`;
         } else {
             return `${proxyURL}/find.jsonld?meta.controlNumber=${librisid}`;
@@ -122,6 +122,8 @@ export class LibrisService {
     async getLibrisItem(librisobject, librisid, bib, sigels) {
         let title: string = ""
         let librisinstance: boolean = false;
+        let instanceid: string = "";
+        const instancetypes = ['Instance', 'Electronic', 'Print', 'TextInstance', 'PhysicalResource', 'Item'];
         let librisinstancelink: string = "#"
         let librisholdings: any;
         let errormessage: string;
@@ -147,6 +149,7 @@ export class LibrisService {
                 || librisobject.items[i]['@type'] == 'Item' )
                 && typeof librisobject.items[i]['@reverse'] !== 'undefined') {
                 librisinstance = true; 
+                instanceid = librisobject.items[i]['@id'];
                 lastslash = librisobject.items[i]['@id'].lastIndexOf("/");
                 librisinstancelink = librisobject.items[i]['@id'].substring(0,lastslash)+"/katalogisering" + librisobject.items[i]['@id'].substring(lastslash);
                 
@@ -169,13 +172,19 @@ export class LibrisService {
                                 })
                             };
 
-                            librisresult = await this.http.get<any>(
-                                librisobject.items[i]['@reverse'].itemOf[j]['@id'].replace('#it','') + '/data.jsonld?embellished=false', httpOptions)
+                            const holdingurl = librisobject.items[i]['@reverse'].itemOf[j]['@id'].replace('#it','')
+                            const holdingresponse = await this.http.get<any>(
+                                holdingurl + '/data.jsonld?embellished=false', { ...httpOptions, observe: 'response' })
                                 .toPromise()
-                            
-                            librisresult.mainEntity = librisresult['@graph'][1]
+                            librisresult = holdingresponse.body
 
                             librisholdings[holdingsindex] = {}
+                            //Rådata som behövs för att kunna uppdatera/ta bort beståndet i Libris
+                            librisholdings[holdingsindex].holdingurl = holdingurl
+                            librisholdings[holdingsindex].etag = holdingresponse.headers.get('ETag')
+                            librisholdings[holdingsindex].holdinggraph = JSON.parse(JSON.stringify(librisresult))
+
+                            librisresult.mainEntity = librisresult['@graph'][1]
                             lastslash = librisobject.items[i]['@reverse'].itemOf[j].heldBy['@id'].lastIndexOf("/")
                             
                             //Sigel
@@ -365,6 +374,20 @@ export class LibrisService {
             }
         }
 
+        //Instans utan några bestånd alls (saknar @reverse) är också en träff, men utan bestånd
+        if (!librisinstance) {
+            //'Item' är en beståndspost (kan finnas i träfflistan om den delar kontrollnummer), aldrig en instans
+            const bare = librisobject.items.find(item => item['@type'] !== 'Item' && instancetypes.includes(item['@type']) && item['@id']);
+            if (bare) {
+                librisinstance = true;
+                instanceid = bare['@id'];
+                const slash = instanceid.lastIndexOf("/");
+                librisinstancelink = instanceid.substring(0, slash) + "/katalogisering" + instanceid.substring(slash);
+                librisholdings = [];
+                errormessage = this.translate.instant('Translate.noholdingsfound');
+            }
+        }
+
         if (!librisinstance) {
             librisholdings=[];
             errormessage = this.translate.instant('Translate.notitlefound');
@@ -376,9 +399,266 @@ export class LibrisService {
             "librisid": librisid,
             "librisinstance": librisinstance,
             "librisinstancelink": librisinstancelink,
+            "instanceid": instanceid,
             "librisholdings": librisholdings,
             "errormessage": errormessage
         }
         return librisitem
+    }
+
+    /**
+     * Fälten i 852 som kan ändras i Libris
+     */
+    editableFields = ['c', 'h', 'j', 'l', 't', 'i'];
+
+    /**
+     * Jämför ursprungliga och redigerade 852-fält och returnerar de ändringar som gjorts
+     * (används både för förhandsvisning och för att veta vilka fält som ska skrivas till Libris)
+     */
+    diffHolding(original: any[], edited: any[]) {
+        const changes = [];
+        for (let k = 0; k < original.length; k++) {
+            for (const field of this.editableFields) {
+                const before = String(original[k][field] ?? '').trim();
+                const after = String(edited[k][field] ?? '').trim();
+                if (before !== after) {
+                    changes.push({ index: k, field: field, before: before, after: after });
+                }
+            }
+        }
+        return changes;
+    }
+
+    private setField(target: any, field: string, value: string) {
+        const keepOrDelete = (prop: string, newvalue: any) => {
+            if (value === '') { delete target[prop]; } else { target[prop] = newvalue; }
+        };
+        switch (field) {
+            case 'c':
+                keepOrDelete('physicalLocation', [value]);
+                break;
+            case 'h': {
+                const existing = Array.isArray(target.shelfMark) ? target.shelfMark[0] : target.shelfMark;
+                //Behåll befintlig form på label (lista/sträng). Ny hyllkod får sträng.
+                const labelIsArray = !!existing && Array.isArray(existing.label);
+                const shelfmark = { ...(existing || { '@type': 'ShelfMarkSequence' }), label: labelIsArray ? [value] : value };
+                keepOrDelete('shelfMark', Array.isArray(target.shelfMark) ? [shelfmark] : shelfmark);
+                break;
+            }
+            case 'j':
+                keepOrDelete('shelfControlNumber', value);
+                break;
+            case 'l':
+                keepOrDelete('shelfLabel', value);
+                break;
+            case 't':
+                keepOrDelete('copyNumber', value);
+                break;
+            case 'i': {
+                const availability = Array.isArray(target.availability) ? target.availability : [];
+                const existing = availability[0] || {};
+                availability[0] = { ...existing, label: Array.isArray(existing.label) ? [value] : value };
+                keepOrDelete('availability', availability);
+                break;
+            }
+        }
+    }
+
+    /**
+     * Skapar en ny JSON-LD-graf för ett bestånd där enbart ändrade fält har skrivits om.
+     * Samma uppdelning som vid läsning: "hasComponent" (flera exemplar) eller beståndet självt.
+     */
+    applyHoldingChanges(graph: any, changes: any[]) {
+        const updated = JSON.parse(JSON.stringify(graph));
+        const mainEntity = updated['@graph'][1];
+        for (const change of changes) {
+            const target = mainEntity.hasComponent ? mainEntity.hasComponent[change.index] : mainEntity;
+            this.setField(target, change.field, change.after);
+        }
+        return updated;
+    }
+
+    /**
+     * Skapar en ny JSON-LD-graf där ett enskilt exemplar (hasComponent[index]) tagits bort
+     */
+    removeHoldingComponent(graph: any, index: number) {
+        const updated = JSON.parse(JSON.stringify(graph));
+        updated['@graph'][1].hasComponent.splice(index, 1);
+        return updated;
+    }
+
+    /**
+     * Bygger grafen för ett helt nytt bestånd (Record + Item) kopplat till instansen
+     */
+    buildNewHolding(instanceid: string, sigel: string, values: any) {
+        const tempid = 'https://id.kb.se/TEMPID';
+        const item: any = {
+            '@id': tempid + '#it',
+            '@type': 'Item',
+            heldBy: { '@id': 'https://libris.kb.se/library/' + sigel },
+            itemOf: { '@id': instanceid }
+        };
+        for (const field of this.editableFields) {
+            const value = String(values[field] ?? '').trim();
+            if (value !== '') {
+                this.setField(item, field, value);
+            }
+        }
+        return {
+            '@graph': [
+                { '@id': tempid, '@type': 'Record', mainEntity: { '@id': tempid + '#it' } },
+                item
+            ]
+        };
+    }
+
+    /**
+     * Skapar ett nytt bestånd i Libris via proxy (POST) och läser sedan in det nya beståndet.
+     * Returnerar ett holding-objekt i samma form som getLibrisItem.
+     */
+    async createLibrisHolding(instanceid: string, sigel: string, values: any, proxyUrl: string, authToken: string) {
+        const graph = this.buildNewHolding(instanceid, sigel, values);
+        const headers = new HttpHeaders({
+            'Authorization': 'Bearer ' + authToken,
+            'Accept': 'application/ld+json',
+            'Content-Type': 'application/ld+json',
+            'XL-Active-Sigel': sigel,
+        });
+        const response = await this.http.post<any>(
+            proxyUrl.replace(/\/+$/, ''), graph, { headers: headers, observe: 'response' }
+        ).toPromise();
+
+        const location = response.headers.get('Location');
+        if (!location) {
+            throw new Error('Libris returned no Location');
+        }
+        const holdingurl = location.replace(/#.*$/, '').replace(/\/+$/, '');
+
+        //Läs in det nya beståndet (för graf och etag)
+        const created = await this.http.get<any>(
+            holdingurl + '/data.jsonld?embellished=false',
+            { headers: new HttpHeaders({ 'Accept': 'application/json+ld' }), observe: 'response' }
+        ).toPromise();
+        const mainEntity = created.body['@graph'][1];
+        const lastslash = mainEntity['@id'].lastIndexOf('/');
+        const row: any = { '8': '', b: sigel };
+        for (const field of this.editableFields) {
+            row[field] = String(values[field] ?? '').trim();
+        }
+        row.otherinfo = '';
+        return {
+            sigel: sigel,
+            link: mainEntity['@id'].substring(0, lastslash) + '/katalogisering' + mainEntity['@id'].substring(lastslash),
+            holdingurl: holdingurl,
+            etag: created.headers.get('ETag'),
+            holdinggraph: created.body,
+            marc_852: [row],
+            otherinfo: ''
+        };
+    }
+
+    /**
+     * Letar upp formen på första befintliga shelfMark bland komponenterna
+     */
+    private findShelfMarkTemplate(components: any[]) {
+        for (const component of components) {
+            if (!component.shelfMark) continue;
+            const isArray = Array.isArray(component.shelfMark);
+            const shelfmark = isArray ? component.shelfMark[0] : component.shelfMark;
+            if (shelfmark && shelfmark['@type']) {
+                return { type: shelfmark['@type'], labelIsArray: Array.isArray(shelfmark.label), isArray: isArray };
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Skapar en ny JSON-LD-graf där ett nytt exemplar (hasComponent) lagts till.
+     * Har beståndet inga "hasComponent" flyttas den befintliga raden (fälten ligger då direkt på beståndet)
+     * till en egen komponent, tillsammans med den nya. En helt tom befintlig rad tas inte med.
+     */
+    addHoldingComponent(graph: any, values: any) {
+        const updated = JSON.parse(JSON.stringify(graph));
+        const mainEntity = updated['@graph'][1];
+        let replacedEmpty = false;
+
+        if (!mainEntity.hasComponent) {
+            const rowfields = ['physicalLocation', 'shelfMark', 'shelfControlNumber', 'shelfLabel', 'copyNumber', 'availability'];
+            const oldrow: any = { '@type': 'Item', heldBy: mainEntity.heldBy };
+            let hasContent = false;
+            for (const f of rowfields) {
+                if (mainEntity[f] !== undefined) {
+                    oldrow[f] = mainEntity[f];
+                    delete mainEntity[f];
+                    hasContent = true;
+                }
+            }
+            mainEntity.hasComponent = hasContent ? [oldrow] : [];
+            replacedEmpty = !hasContent;
+        }
+
+        const newrow: any = { '@type': 'Item', heldBy: mainEntity.heldBy };
+        //Hyllkod (h) ska ha samma form som beståndets övriga rader (typ, sträng/lista)
+        const shelfmarktemplate = this.findShelfMarkTemplate(mainEntity.hasComponent);
+        for (const field of this.editableFields) {
+            const value = String(values[field] ?? '').trim();
+            if (value === '') continue;
+            if (field === 'h' && shelfmarktemplate) {
+                const shelfmark = {
+                    '@type': shelfmarktemplate.type,
+                    label: shelfmarktemplate.labelIsArray ? [value] : value
+                };
+                newrow.shelfMark = shelfmarktemplate.isArray ? [shelfmark] : shelfmark;
+            } else {
+                this.setField(newrow, field, value);
+            }
+        }
+        mainEntity.hasComponent.push(newrow);
+        return { graph: updated, replacedEmpty: replacedEmpty };
+    }
+
+    /**
+     * URL till beståndet via proxyn (samma sökväg som i Libris)
+     */
+    private holdingProxyUrl(holding: any, proxyUrl: string) {
+        return proxyUrl.replace(/\/+$/, '') + new URL(holding.holdingurl).pathname;
+    }
+
+    private writeHeaders(holding: any, authToken: string, contentType?: string) {
+        // Alma-token identifierar användaren mot proxyn, som själv lägger på Libris-token
+        let headers = new HttpHeaders({
+            'Authorization': 'Bearer ' + authToken,
+            'Accept': 'application/ld+json',
+            'XL-Active-Sigel': holding.sigel,
+        });
+        if (contentType) {
+            headers = headers.set('Content-Type', contentType);
+        }
+        if (holding.etag) {
+            headers = headers.set('If-Match', holding.etag);
+        }
+        return headers;
+    }
+
+    /**
+     * Skriver ett uppdaterat bestånd till Libris via proxy (PUT).
+     * Returnerar ny graf och ny etag.
+     */
+    async updateLibrisHolding(holding: any, graph: any, proxyUrl: string, authToken: string) {
+        const response = await this.http.put<any>(
+            this.holdingProxyUrl(holding, proxyUrl), graph,
+            { headers: this.writeHeaders(holding, authToken, 'application/ld+json'), observe: 'response' }
+        ).toPromise();
+        return { graph: graph, etag: response.headers.get('ETag') };
+    }
+
+    /**
+     * Tar bort ett bestånd i Libris via proxy (DELETE).
+     */
+    async deleteLibrisHolding(holding: any, proxyUrl: string, authToken: string) {
+        return this.http.delete<any>(
+            this.holdingProxyUrl(holding, proxyUrl),
+            { headers: this.writeHeaders(holding, authToken) }
+        ).toPromise();
     }
 }
