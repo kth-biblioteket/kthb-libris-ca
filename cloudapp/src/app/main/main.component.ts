@@ -1,4 +1,4 @@
-import { Subscription, throwError } from 'rxjs';
+import { Subscription, EMPTY, from } from 'rxjs';
 import { AlertService } from '@exlibris/exl-cloudapp-angular-lib';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
@@ -10,7 +10,7 @@ import {
 } from '@exlibris/exl-cloudapp-angular-lib';
 import { TranslateService } from '@ngx-translate/core';
 import { AppService } from '../app.service';
-import { map, catchError } from 'rxjs/operators';
+import { map, catchError, mergeMap } from 'rxjs/operators';
 import { LibrisService } from '../libris.service';
 import { LibrisItem } from '../models/librisitem';
 import { HoldingDialogComponent } from './holding-dialog/holding-dialog.component';
@@ -31,6 +31,7 @@ export class MainComponent implements OnInit, OnDestroy {
 
   entities: Entity[];
   selectedEntity: Entity;
+  selectedId: string = null;
   pageitems: any;
   hasAlmaApiResult: boolean = false;
   
@@ -98,7 +99,23 @@ export class MainComponent implements OnInit, OnDestroy {
   
   
   pageLoad() {
-    this.pageLoad$ = this.eventsService.onPageLoad(async pageInfo => { 
+    this.pageLoad$ = this.eventsService.onPageLoad(async pageInfo => {
+      const incoming = pageInfo.entities || [];
+
+      //När man klickar på en post i listan skickar Alma samma lista igen men med den klickade posten
+      //först. Det är samma poster, så den visade listan behålls (i sin ursprungliga ordning) och laddas inte om.
+      //Alma skickar ingen ny händelse när posten stängs, så listan måste redan ligga rätt.
+      const sameList = incoming.length > 0 &&
+                       this.entities &&
+                       this.entities.length === incoming.length &&
+                       incoming.every(i => this.entities.some(e => e.id === i.id));
+      if (sameList) {
+        this.selectedEntity = incoming[0];
+        this.selectedId = incoming[0].id;
+        this.scrollToSelected();
+        return;
+      }
+
       this.hasAlmaApiResult = false;
       this.hasLibrisResult = false;
       this.app_error = false;
@@ -108,18 +125,12 @@ export class MainComponent implements OnInit, OnDestroy {
         this.subscription$.unsubscribe();
       }
 
-      const incoming = pageInfo.entities || [];
       if (incoming.length === 0) return;
 
-      const isBookClick = this.entities && 
-                        this.entities.length > 0 && 
-                        this.entities.some(e => e.id === incoming[0].id);
-
-      //Hämta bara ny om det inte är klick på en post.
-      if (!isBookClick) {
-          this.entities = [...incoming];
-      }
+      //Annars visas det Alma just visar: en ny lista, en filtrerad lista eller en enskild post
+      this.entities = [...incoming];
       this.selectedEntity = incoming[0]; 
+      this.selectedId = null;
       
       //Kör bara om poster som visas i Alma är items eller bibs eller holdings
       if ( this.entities.length > 0 && (this.entities[0].type == "BIB_MMS" || this.entities[0].type == "ITEM" || this.entities[0].type == "HOLDING")) {      
@@ -132,7 +143,8 @@ export class MainComponent implements OnInit, OnDestroy {
         this.numberofAlmaItems = this.entities.length;
 
         //Gå igenom alla poster på aktuell sida.
-        this.entities.map((e, index) => {
+        //Alma tillåter högst 10 samtidiga anrop från en Cloud App, så anropen körs max 10 åt gången.
+        const processEntity = (e, index) => {
           this.pageitems[index] = [];
           let sigeltolibris: any;
           //Hämta ytterligare almainformation
@@ -145,7 +157,7 @@ export class MainComponent implements OnInit, OnDestroy {
             almaurl = e.link
           }
           
-          this.restService
+          return this.restService
             .call(almaurl)
             .pipe(
               map(async (item) => {
@@ -262,13 +274,30 @@ export class MainComponent implements OnInit, OnDestroy {
                 }
                 this.app_error = true;
                 this.app_errormessage = 'Error: ' + err.message;
-                return throwError(err);
+                return EMPTY;
               })
             )
-            .subscribe();
-        });
+            ;
+        };
+
+        from(this.entities.map((e, index) => ({ e, index })))
+          .pipe(mergeMap(({ e, index }) => processEntity(e, index), 10))
+          .subscribe();
       }
     });
+  }
+
+  /**
+   * Scrollar fram kortet för den post som klickats i Alma (efter att vyn ritats om)
+   */
+  scrollToSelected() {
+    setTimeout(() => {
+      const index = this.entities.findIndex(e => e.id === this.selectedId);
+      const card = index >= 0 ? document.getElementById('card-' + index) : null;
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 0);
   }
 
   ngOnDestroy(): void {

@@ -17,7 +17,8 @@
         <i class="material-icons md-30 icon-green">check_circle</i>
         <p translate>Translate.Allhandled</p>
         <div *ngFor="let pageitem of pageitems; index as i">
-            <mat-card *ngIf="pageitem">
+            <mat-card *ngIf="pageitem" [id]="'card-' + i"
+                [class.selected-card]="selectedId && entities && entities[i] && entities[i].id === selectedId">
                 <mat-card-header>
                     <mat-card-title *ngIf="!pageitem.librisitem.librisinstance">
                         <i class="material-icons md-30 icon-red">error</i>{{i + 1 + '. ' + pageitem.librisitem.title}}

@@ -64,3 +64,7 @@ h2 {
 }
 
 mat-card { margin-bottom: 5px;}
+.selected-card {
+  border-left: 5px solid #1976d2;
+  background-color: rgba(25, 118, 210, 0.08);
+}
