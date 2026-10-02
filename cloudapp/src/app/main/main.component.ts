@@ -178,6 +178,7 @@ export class MainComponent implements OnInit, OnDestroy {
                 //BIB-poster
                 if (e.type == "BIB_MMS" || e.type == "HOLDING") {
                   bib = item;
+                  this.pageitems[index].mms_id = item.mms_id;
                   if (item.network_number) {
                     librisarr = this.librisservice.getLibrisType(
                       item.network_number

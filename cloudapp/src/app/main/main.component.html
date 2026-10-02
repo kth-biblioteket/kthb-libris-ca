@@ -27,6 +27,7 @@
                             pageitem.librisitem.title}} <i class="material-icons md-14">launch</i>
                         </a>
                     </mat-card-title>
+                    <mat-card-subtitle *ngIf="pageitem.mms_id">MMS ID: {{pageitem.mms_id}}</mat-card-subtitle>
                 </mat-card-header>
                 <mat-card-content *ngIf="pageitem.librisitem.librisid !=''">
                     <i>
