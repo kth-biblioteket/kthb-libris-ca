@@ -105,7 +105,10 @@ export class MainComponent implements OnInit, OnDestroy {
       //När man klickar på en post i listan skickar Alma samma lista igen men med den klickade posten
       //först. Det är samma poster, så den visade listan behålls (i sin ursprungliga ordning) och laddas inte om.
       //Alma skickar ingen ny händelse när posten stängs, så listan måste redan ligga rätt.
+      //Det gäller bara om appen också visar listan just nu (hasAlmaApiResult). Annars, till exempel efter en
+      //tom sida (sökformuläret), måste samma lista laddas om och visas igen.
       const sameList = incoming.length > 0 &&
+                       this.hasAlmaApiResult &&
                        this.entities &&
                        this.entities.length === incoming.length &&
                        incoming.every(i => this.entities.some(e => e.id === i.id));
@@ -125,7 +128,12 @@ export class MainComponent implements OnInit, OnDestroy {
         this.subscription$.unsubscribe();
       }
 
-      if (incoming.length === 0) return;
+      if (incoming.length === 0) {
+        //Ingen lista visas längre (t.ex. sökformuläret). Glöm den visade listan så att samma lista kan visas igen.
+        this.entities = [];
+        this.selectedId = null;
+        return;
+      }
 
       //Annars visas det Alma just visar: en ny lista, en filtrerad lista eller en enskild post
       this.entities = [...incoming];
