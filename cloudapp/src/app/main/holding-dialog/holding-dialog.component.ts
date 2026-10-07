@@ -1,13 +1,14 @@
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, OnInit } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { TranslateService } from '@ngx-translate/core';
 import { LibrisService } from '../../libris.service';
+import { AlmaService } from '../../alma.service';
 
 @Component({
   selector: 'app-holding-dialog',
   templateUrl: './holding-dialog.component.html',
 })
-export class HoldingDialogComponent {
+export class HoldingDialogComponent implements OnInit {
 
   mode: 'edit' | 'add' | 'create' | 'delete' | 'deleteRow';
   instanceid: string;
@@ -27,10 +28,16 @@ export class HoldingDialogComponent {
   busy: boolean = false;
   error: string = '';
 
+  //Kontroll av Alma innan något tas bort i Libris (varnar, hindrar inte)
+  almaChecking: boolean = false;
+  almaCheckFailed: boolean = false;
+  almaWarnings: { label: string, reasons: string[] }[] = [];
+
   constructor(
     public dialogRef: MatDialogRef<HoldingDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: any,
     private librisservice: LibrisService,
+    private alma: AlmaService,
     private translate: TranslateService
   ) {
     this.mode = data.mode;
@@ -51,6 +58,28 @@ export class HoldingDialogComponent {
         ? [this.holding.marc_852[this.rowIndex]]
         : this.holding.marc_852;
     this.edited = JSON.parse(JSON.stringify(this.original));
+  }
+
+  async ngOnInit() {
+    const check = this.data.almaCheck;
+    if (!check || (this.mode !== 'delete' && this.mode !== 'deleteRow')) { return; }
+    this.almaChecking = true;
+    try {
+      const holdings = await this.alma.getLibraryHoldings(check.mmsId, check.libraryCode);
+      const items = this.mode === 'delete'
+        ? [].concat(...holdings.map(h => h.items))
+        : this.alma.matchItems(holdings, [this.row]);
+      this.almaWarnings = this.alma.deleteWarnings(items);
+    } catch (e) {
+      this.almaCheckFailed = true;
+    }
+    this.almaChecking = false;
+  }
+
+  reasonText(reason: string): string {
+    const key = 'Translate.holding_alma_r_' + reason;
+    const text = this.translate.instant(key);
+    return text === key ? reason : text;
   }
 
   get isForm() {

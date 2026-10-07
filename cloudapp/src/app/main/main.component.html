@@ -1,4 +1,33 @@
-<p><a (click)="setLang('en')">English</a> | <a (click)="setLang('sv')">Svenska</a></p>
+<div class="topbar">
+<p>
+    <a (click)="setLang('en')">English</a> | <a (click)="setLang('sv')">Svenska</a>
+    <button mat-stroked-button class="history-button" *ngIf="deletedEntries.length > 0"
+        (click)="showHistory = !showHistory">
+        <mat-icon>history</mat-icon> {{ 'Translate.history_title' | translate }} ({{deletedEntries.length}})
+    </button>
+</p>
+<div class="history" *ngIf="showHistory && deletedEntries.length > 0">
+    <p class="history-hint">{{ 'Translate.history_hint' | translate }}</p>
+        <div class="history-row" *ngFor="let entry of deletedEntries">
+            <div class="history-text">
+                <b>{{entry.title}}</b><br>
+                MMS ID: {{entry.mmsId}} · {{entry.libraryName}} ({{entry.sigel}}) · {{entry.ts | date:'yyyy-MM-dd HH:mm'}}<br>
+                <span *ngIf="entry.kind == 'all'">{{ 'Translate.history_all' | translate }} ({{entry.rows}})</span>
+                <span *ngIf="entry.kind == 'row'">{{ 'Translate.history_row' | translate }}: {{entry.rows}}</span>
+                <span *ngIf="entry.undone?.libris"> · {{ 'Translate.undo_undonelibris' | translate }}</span>
+                <span *ngIf="entry.undone?.alma"> · {{ 'Translate.undo_undonealma' | translate }}</span>
+                <span *ngIf="entry.alma"> · Alma: {{entry.alma.deleted}} {{ 'Translate.history_deleted' | translate }}<span *ngIf="entry.alma.failed > 0">, {{entry.alma.failed}} {{ 'Translate.history_notdeleted' | translate }}</span></span>
+            </div>
+            <div class="history-actions">
+                <button mat-icon-button (click)="copyMms(entry.mmsId)" [title]="'Translate.history_copy' | translate"><mat-icon>content_copy</mat-icon></button>
+                <button mat-icon-button (click)="showPostByMms(entry.mmsId); showHistory = false" [title]="'Translate.history_show' | translate"><mat-icon>visibility</mat-icon></button>
+                <button mat-icon-button *ngIf="entry.hasUndo && config?.proxyUrl" (click)="openUndo(entry)" [title]="'Translate.undo_button' | translate"><mat-icon>undo</mat-icon></button>
+                <button mat-icon-button (click)="removeEntry(entry.id)" [title]="'Translate.history_remove' | translate"><mat-icon>close</mat-icon></button>
+            </div>
+        </div>
+    <button mat-button (click)="clearHistory()">{{ 'Translate.history_clear' | translate }}</button>
+</div>
+</div>
 <h4 translate>Translate.Intro</h4>
 <div *ngIf="app_error">
     <mat-card>
@@ -81,7 +110,7 @@
                                                 <mat-icon>edit</mat-icon>
                                             </button>
                                             <button mat-icon-button *ngIf="librisholding.marc_852.length > 1"
-                                                (click)="deleteHoldingRow(librisholding, i)"
+                                                (click)="deleteHoldingRow(pageitem, librisholding, i)"
                                                 [title]="'Translate.holding_deleterow' | translate">
                                                 <mat-icon>delete_outline</mat-icon>
                                             </button>

@@ -513,20 +513,71 @@ export class LibrisService {
     }
 
     /**
-     * Skapar ett nytt bestånd i Libris via proxy (POST) och läser sedan in det nya beståndet.
-     * Returnerar ett holding-objekt i samma form som getLibrisItem.
+     * Skickar en graf till Libris via proxy (POST /data) och returnerar svaret
      */
-    async createLibrisHolding(instanceid: string, sigel: string, values: any, proxyUrl: string, authToken: string) {
-        const graph = this.buildNewHolding(instanceid, sigel, values);
+    private async postGraph(graph: any, sigel: string, proxyUrl: string, authToken: string) {
         const headers = new HttpHeaders({
             'Authorization': 'Bearer ' + authToken,
             'Accept': 'application/ld+json',
             'Content-Type': 'application/ld+json',
             'XL-Active-Sigel': sigel,
         });
-        const response = await this.http.post<any>(
+        return this.http.post<any>(
             proxyUrl.replace(/\/+$/, ''), graph, { headers: headers, observe: 'response' }
         ).toPromise();
+    }
+
+    /**
+     * Bygger en ny beståndspost av en tidigare (borttagen) graf: innehållet behålls men post-id:n byts mot ett
+     * temporärt id och referenser till den gamla posten (sameAs) tas bort. Libris ger posten ett nytt id.
+     */
+    buildRestoredHolding(oldGraph: any) {
+        const tempid = 'https://id.kb.se/TEMPID';
+        const item = JSON.parse(JSON.stringify(oldGraph['@graph'][1]));
+        item['@id'] = tempid + '#it';
+        delete item.sameAs;
+        return {
+            '@graph': [
+                { '@id': tempid, '@type': 'Record', mainEntity: { '@id': tempid + '#it' } },
+                item
+            ]
+        };
+    }
+
+    /**
+     * Återskapar ett borttaget bestånd i Libris (nytt id). Returnerar adressen till det nya beståndet.
+     */
+    async restoreLibrisHolding(oldGraph: any, sigel: string, proxyUrl: string, authToken: string): Promise<string> {
+        const graph = this.buildRestoredHolding(oldGraph);
+        const response = await this.postGraph(graph, sigel, proxyUrl, authToken);
+        return response.headers.get('Location');
+    }
+
+    /**
+     * Lägger tillbaka en borttagen rad (komponent) i ett bestånd som finns kvar i Libris.
+     */
+    async restoreLibrisRow(holdingurl: string, sigel: string, component: any, index: number, proxyUrl: string, authToken: string) {
+        const current = await this.http.get<any>(
+            holdingurl.replace(/#.*$/, '') + '/data.jsonld?embellished=false',
+            { headers: new HttpHeaders({ 'Accept': 'application/json+ld' }), observe: 'response' }
+        ).toPromise();
+        const graph = current.body;
+        const mainEntity = graph['@graph'][1];
+        if (!Array.isArray(mainEntity.hasComponent)) {
+            throw new Error('Beståndet har ingen radlista, raden kan inte läggas tillbaka automatiskt');
+        }
+        mainEntity.hasComponent.splice(Math.min(index, mainEntity.hasComponent.length), 0, component);
+        const holding = { holdingurl: holdingurl.replace(/#.*$/, ''), etag: current.headers.get('ETag'), sigel: sigel };
+        return this.updateLibrisHolding(holding, graph, proxyUrl, authToken);
+    }
+
+    /**
+     * Skapar ett nytt bestånd i Libris via proxy (POST) och läser sedan in det nya beståndet.
+     * Returnerar ett holding-objekt i samma form som getLibrisItem.
+     */
+    async createLibrisHolding(instanceid: string, sigel: string, values: any, proxyUrl: string, authToken: string) {
+        const graph = this.buildNewHolding(instanceid, sigel, values);
+        const response = await this.postGraph(graph, sigel, proxyUrl, authToken);
 
         const location = response.headers.get('Location');
         if (!location) {

@@ -56,6 +56,18 @@
     </p>
   </div>
 
+  <div *ngIf="mode == 'delete' || mode == 'deleteRow'" style="margin-top: 8px">
+    <p *ngIf="almaChecking" style="font-size: 12px"><i>{{ 'Translate.holding_alma_checking' | translate }}</i></p>
+    <p *ngIf="almaCheckFailed" style="font-size: 12px"><i>{{ 'Translate.holding_alma_checkfailed' | translate }}</i></p>
+    <div *ngIf="almaWarnings.length > 0" style="border: 1px solid #ef6c00; border-radius: 6px; padding: 8px 10px; background: rgba(239, 108, 0, 0.08)">
+      <p style="font-weight: 500; margin: 0 0 4px">{{ 'Translate.holding_alma_warning' | translate }}</p>
+      <div *ngFor="let w of almaWarnings" style="font-size: 12px">
+        <b>{{w.label}}</b>: <span *ngFor="let r of w.reasons; let last = last">{{ reasonText(r) }}<span *ngIf="!last">, </span></span>
+      </div>
+      <p style="font-size: 12px; margin: 4px 0 0">{{ 'Translate.holding_alma_warningnote' | translate }}</p>
+    </div>
+  </div>
+
   <p *ngIf="error" class="icon-red">{{error}}</p>
 </mat-dialog-content>
 

@@ -15,8 +15,12 @@ import { ErrorComponent } from './static/error.component';
 import { ConfigurationDialogComponent } from './configuration/configuration-dialog/configuration-dialog.component';
 import { HelpComponent } from './help/help.component';
 import { HoldingDialogComponent } from './main/holding-dialog/holding-dialog.component';
+import { AlmaDeleteDialogComponent } from './main/alma-delete-dialog/alma-delete-dialog.component';
 
 import { LibrisService } from './libris.service';
+import { AlmaService } from './alma.service';
+import { HistoryService } from './history.service';
+import { UndoDialogComponent } from './main/undo-dialog/undo-dialog.component';
 
 @NgModule({
   declarations: [
@@ -27,7 +31,9 @@ import { LibrisService } from './libris.service';
     ErrorComponent,
     ConfigurationDialogComponent,
     HelpComponent,
-    HoldingDialogComponent
+    HoldingDialogComponent,
+    AlmaDeleteDialogComponent,
+    UndoDialogComponent
   ],
   imports: [
     MaterialModule,
@@ -42,12 +48,16 @@ import { LibrisService } from './libris.service';
   ],
   providers: [
     LibrisService,
+    AlmaService,
+    HistoryService,
     { provide: MAT_FORM_FIELD_DEFAULT_OPTIONS, useValue: { appearance: 'standard' } },
   ],
   bootstrap: [AppComponent],
   entryComponents: [
     ConfigurationDialogComponent,
-    HoldingDialogComponent
+    HoldingDialogComponent,
+    AlmaDeleteDialogComponent,
+    UndoDialogComponent
  ]
 })
 export class AppModule { }

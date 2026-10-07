@@ -136,3 +136,76 @@ mat-card { margin-bottom: 5px;}
   flex-wrap: wrap;
   margin-bottom: 8px;
 }
+
+/* Fast rad högst upp: knappen syns även när man scrollat, listan öppnas som en överlagring under raden */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 4px 0;
+  background: #fff;
+  background: Canvas;
+  border-bottom: 0.5px solid #ccc;
+}
+
+.topbar p {
+  margin: 0;
+}
+
+.history {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  z-index: 11;
+  max-height: 60vh;
+  overflow: auto;
+  padding: 8px 10px;
+  background: #fff;
+  background: Canvas;
+  border: 0.5px solid #ccc;
+  border-radius: 0 0 8px 8px;
+}
+
+mat-card {
+  scroll-margin-top: 48px;
+}
+
+.history-button {
+  margin-left: 8px;
+  font-size: 12px;
+  line-height: 28px;
+  padding: 0 8px;
+}
+
+.history-button .mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  line-height: 16px;
+  vertical-align: -3px;
+}
+
+.history-hint {
+  font-size: 12px;
+  margin: 4px 0 8px;
+}
+
+.history-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.history-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.history-actions {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}

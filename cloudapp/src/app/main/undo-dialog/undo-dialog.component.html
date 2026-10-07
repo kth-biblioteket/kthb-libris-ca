@@ -1,0 +1,52 @@
+<h2 mat-dialog-title>{{ 'Translate.undo_title' | translate }}</h2>
+
+<mat-dialog-content>
+  <p><b>{{entry.title}}</b><br>MMS ID: {{entry.mmsId}} · {{entry.libraryName}} ({{entry.sigel}})</p>
+
+  <div *ngIf="libris">
+    <p style="font-weight: 500">{{ 'Translate.undo_libris' | translate }}</p>
+    <p *ngIf="libris.kind == 'all'" style="font-size: 13px">{{ 'Translate.undo_librisall' | translate }}</p>
+    <p *ngIf="libris.kind == 'row'" style="font-size: 13px">{{ 'Translate.undo_librisrow' | translate }}</p>
+    <div *ngFor="let row of librisRows" style="font-size: 12px; border-left: 2px solid #999; padding-left: 8px; margin-bottom: 4px">
+      <span *ngIf="row.h"><b>h#</b> {{row.h}} </span>
+      <span *ngIf="row.j"><b>j#</b> {{row.j}} </span>
+      <span *ngIf="row.l"><b>l#</b> {{row.l}} </span>
+      <span *ngIf="row.t"><b>t#</b> {{row.t}} </span>
+    </div>
+    <p *ngIf="librisAlreadyUndone || done.libris" style="color: #2e7d32">{{ 'Translate.undo_done' | translate }}</p>
+  </div>
+  <div *ngIf="almaSnapshot">
+    <p style="font-weight: 500">{{ 'Translate.undo_alma' | translate }}</p>
+    <p style="font-size: 13px">{{ 'Translate.undo_almaintro' | translate }}</p>
+    <div *ngFor="let h of almaSnapshot.holdings" style="font-size: 12px; border-left: 2px solid #999; padding-left: 8px; margin-bottom: 4px">
+      {{h.label}}
+    </div>
+    <div *ngFor="let i of almaSnapshot.items" style="font-size: 12px; border-left: 2px solid #999; padding-left: 8px; margin-bottom: 4px">
+      {{i.label}}
+    </div>
+    <p *ngIf="almaAlreadyUndone" style="color: #2e7d32">{{ 'Translate.undo_donealma' | translate }}</p>
+    <div *ngIf="almaResult">
+      <div *ngIf="almaResult.created.length > 0" style="font-size: 13px; color: #2e7d32">
+        {{ 'Translate.undo_created' | translate }}: {{almaResult.created.length}}
+      </div>
+      <div *ngIf="almaResult.failed.length > 0">
+        <p style="font-weight: 500" class="icon-red">{{ 'Translate.alma_failed' | translate }}</p>
+        <div *ngFor="let f of almaResult.failed" style="font-size: 13px"><b>{{f.label}}</b>: {{f.message}}</div>
+      </div>
+    </div>
+  </div>
+  <p *ngIf="!libris && !almaSnapshot">{{ 'Translate.undo_nothing' | translate }}</p>
+
+  <p style="font-size: 12px">{{ 'Translate.undo_note' | translate }}</p>
+  <p *ngIf="error" class="icon-red">{{error}}</p>
+</mat-dialog-content>
+
+<mat-dialog-actions>
+  <button mat-button (click)="close()" [disabled]="busy">{{ 'Translate.alma_close' | translate }}</button>
+  <button mat-flat-button color="primary" *ngIf="libris && !librisAlreadyUndone && !done.libris" (click)="undoLibris()" [disabled]="busy">
+    {{ 'Translate.undo_dolibris' | translate }}
+  </button>
+  <button mat-flat-button color="primary" *ngIf="almaSnapshot && !almaAlreadyUndone && !almaResult" (click)="undoAlma()" [disabled]="busy">
+    {{ 'Translate.undo_doalma' | translate }}
+  </button>
+</mat-dialog-actions>

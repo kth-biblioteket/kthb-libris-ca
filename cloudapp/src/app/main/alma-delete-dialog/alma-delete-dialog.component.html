@@ -1,0 +1,60 @@
+<h2 mat-dialog-title>{{ 'Translate.alma_title' | translate }} – {{libraryName}} ({{sigel}})</h2>
+
+<mat-dialog-content>
+  <p *ngIf="loading">{{ 'Translate.alma_loading' | translate }}</p>
+  <p *ngIf="error" class="icon-red">{{error}}</p>
+
+  <p *ngIf="hasNothing">{{ 'Translate.alma_nothing' | translate }}</p>
+
+  <div *ngIf="!loading && !hasNothing && !result">
+    <p *ngIf="mode == 'all'">{{ 'Translate.alma_introall' | translate }}</p>
+    <p *ngIf="mode == 'rows' && !noMatch">{{ 'Translate.alma_introrows' | translate }}</p>
+    <p *ngIf="noMatch">{{ 'Translate.alma_nomatch' | translate }}</p>
+
+    <div *ngFor="let holding of holdings" style="margin-bottom: 10px">
+      <div style="font-weight: 500">
+        {{holding.library}} / {{holding.location}} / {{holding.call_number}}
+        <span *ngIf="isEmptied(holding)" style="color: #c62828">– {{ 'Translate.alma_holdingremoved' | translate }}</span>
+      </div>
+      <div *ngFor="let item of holding.items" style="font-size: 13px; padding-left: 12px">
+        <label>
+          <input type="checkbox" *ngIf="mode == 'rows'" [(ngModel)]="selected[item.pid]" [name]="item.pid">
+          <b>{{item.callnumber}}</b>
+          <span *ngIf="item.barcode"> ({{item.barcode}})</span>
+          <span *ngIf="item.description"> {{item.description}}</span>
+          <span *ngIf="item.enumeration"> {{item.enumeration}}</span>
+          <i *ngIf="item.process_type"> – {{item.process_type}}</i>
+          <i *ngIf="!item.process_type && item.status && item.status != 'Item in place'"> – {{item.status}}</i>
+        </label>
+      </div>
+      <div *ngIf="holding.items.length == 0" style="font-size: 13px; padding-left: 12px"><i>{{ 'Translate.alma_noitems' | translate }}</i></div>
+    </div>
+
+    <p style="font-size: 13px"><b>{{ 'Translate.alma_warning' | translate }}</b></p>
+  </div>
+
+  <div *ngIf="result">
+    <div *ngIf="result.deleted.length > 0">
+      <p style="font-weight: 500">{{ 'Translate.alma_deleted' | translate }}</p>
+      <div *ngFor="let line of result.deleted" style="font-size: 13px">{{line}}</div>
+    </div>
+    <div *ngIf="result.failed.length > 0">
+      <p style="font-weight: 500" class="icon-red">{{ 'Translate.alma_failed' | translate }}</p>
+      <div *ngFor="let f of result.failed" style="font-size: 13px"><b>{{f.label}}</b>: {{f.message}}</div>
+    </div>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions>
+  <ng-container *ngIf="!result">
+    <button mat-button (click)="dialogRef.close(false)" [disabled]="busy">{{ (hasNothing ? 'Translate.alma_close' : 'Translate.alma_skip') | translate }}</button>
+    <button mat-flat-button color="warn" *ngIf="!loading && !hasNothing && !error" (click)="remove()"
+      [disabled]="busy || plan.items.length + plan.holdings.length == 0">
+      {{ 'Translate.alma_remove' | translate }}
+    </button>
+  </ng-container>
+  <ng-container *ngIf="result">
+    <button mat-button (click)="dialogRef.close(result)">{{ 'Translate.alma_close' | translate }}</button>
+    <button mat-flat-button color="primary" (click)="refreshAlma()">{{ 'Translate.alma_refresh' | translate }}</button>
+  </ng-container>
+</mat-dialog-actions>
