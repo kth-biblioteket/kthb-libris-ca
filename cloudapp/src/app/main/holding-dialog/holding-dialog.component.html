@@ -40,7 +40,12 @@
     </table>
   </div>
 
-  <p *ngIf="mode == 'delete'">{{ 'Translate.holding_deleteconfirm' | translate }}</p>
+  <div *ngIf="mode == 'delete'">
+    <p>{{ 'Translate.holding_deleteconfirm' | translate: { count: holding.marc_852?.length, library: libraryname + ' (' + holding.sigel + ')' } }}</p>
+    <div *ngFor="let r of holding.marc_852" style="font-size: 12px; border-left: 2px solid #999; padding-left: 8px; margin-bottom: 4px">
+      <ng-container *ngFor="let field of ['c','h','j','l','t','i']"><span *ngIf="r[field]"><b>{{field}}#</b> {{r[field]}} </span></ng-container>
+    </div>
+  </div>
 
   <div *ngIf="mode == 'deleteRow'">
     <p>{{ 'Translate.holding_deleterowconfirm' | translate }}</p>
@@ -61,6 +66,6 @@
     <button mat-button *ngIf="preview" (click)="preview = false" [disabled]="busy">{{ 'Translate.holding_back' | translate }}</button>
     <button mat-flat-button *ngIf="preview" color="primary" (click)="save()" [disabled]="busy || changes.length == 0">{{ 'Translate.holding_save' | translate }}</button>
   </ng-container>
-  <button mat-flat-button *ngIf="mode == 'delete'" color="warn" (click)="remove()" [disabled]="busy">{{ 'Translate.holding_remove' | translate }}</button>
+  <button mat-flat-button *ngIf="mode == 'delete'" color="warn" (click)="remove()" [disabled]="busy">{{ 'Translate.holding_removeall' | translate: { count: holding.marc_852?.length } }}</button>
   <button mat-flat-button *ngIf="mode == 'deleteRow'" color="warn" (click)="removeRow()" [disabled]="busy">{{ 'Translate.holding_remove' | translate }}</button>
 </mat-dialog-actions>

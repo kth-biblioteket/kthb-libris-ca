@@ -49,23 +49,7 @@
                     <div *ngFor="let librisholding of pageitem.librisitem.librisholdings">
                         <div *ngFor="let sigel of sigels | keyvalue">
                             <div *ngIf="sigel.value.sigel == librisholding.sigel">
-                                <h3>{{sigel.value.libraryname}} ({{sigel.value.sigel}})
-                                    <ng-container *ngIf="config?.proxyUrl && librisholding.holdingurl">
-                                        <button mat-icon-button (click)="addHoldingRow(librisholding, sigel.value.libraryname)"
-                                            [title]="'Translate.holding_add' | translate">
-                                            <mat-icon>add</mat-icon>
-                                        </button>
-                                        <button mat-icon-button *ngIf="librisholding.marc_852.length <= 1"
-                                            (click)="editHolding(pageitem, librisholding, sigel.value.libraryname)"
-                                            [title]="'Translate.holding_edit' | translate">
-                                            <mat-icon>edit</mat-icon>
-                                        </button>
-                                        <button mat-icon-button (click)="deleteHolding(pageitem, librisholding, sigel.value.libraryname)"
-                                            [title]="'Translate.holding_delete' | translate">
-                                            <mat-icon>delete</mat-icon>
-                                        </button>
-                                    </ng-container>
-                                </h3>
+                                <h3>{{sigel.value.libraryname}} ({{sigel.value.sigel}})</h3>
                             </div>
                         </div>
                         <div *ngIf="librisholding.marc_852">
@@ -73,33 +57,49 @@
                                 style="padding-left: 0px; padding-bottom: 20px">
                                 <div *ngIf="marc852.c != '' || marc852.h != ''  || marc852.j != ''  || marc852.l != '' || marc852.t != '' || marc852.i != '' ; else elseBlock"
                                     style="padding-left: 0px; padding-bottom: 5px">
-                                    <div>
-                                        <i translate>Translate.locationtext </i>
-                                        <span *ngIf="marc852.c != ''"><b>c#</b> {{marc852.c}} </span>
-                                        <span *ngIf="marc852.h != ''"><b>h#</b> {{marc852.h}} </span>
-                                        <span *ngIf="marc852.j != ''"><b>j#</b> {{marc852.j}} </span>
-                                        <span *ngIf="marc852.l != ''"><b>l#</b> {{marc852.l}} </span>
-                                        <span *ngIf="marc852.t != ''"><b>t#</b> {{marc852.t}} </span>
-                                        <span *ngIf="marc852.i != ''"><b>i#</b> {{marc852.i}} </span>
-                                        <span *ngIf="marc852['8'] != ''"><b>8#</b> {{marc852['8']}} </span>
-                                        <button mat-icon-button
-                                            *ngIf="config?.proxyUrl && librisholding.holdingurl && librisholding.marc_852.length > 1"
-                                            (click)="editHolding(pageitem, librisholding, getLibraryName(librisholding.sigel), i)"
-                                            [title]="'Translate.holding_editrow' | translate">
-                                            <mat-icon>edit</mat-icon>
-                                        </button>
-                                        <button mat-icon-button
-                                            *ngIf="config?.proxyUrl && librisholding.holdingurl && librisholding.marc_852.length > 1"
-                                            (click)="deleteHoldingRow(librisholding, i)"
-                                            [title]="'Translate.holding_deleterow' | translate">
-                                            <mat-icon>delete_outline</mat-icon>
-                                        </button>
-                                    </div>
-                                    <div>
-                                        <span *ngIf="marc852.otherinfo && marc852.otherinfo != ''"><i translate>Translate.otherinfotext </i>{{marc852.otherinfo}}</span>
+                                    <div class="holding-row">
+                                        <div class="holding-row-text">
+                                            <div>
+                                                <i translate>Translate.locationtext </i>
+                                                <span *ngIf="marc852.c != ''"><b>c#</b> {{marc852.c}} </span>
+                                                <span *ngIf="marc852.h != ''"><b>h#</b> {{marc852.h}} </span>
+                                                <span *ngIf="marc852.j != ''"><b>j#</b> {{marc852.j}} </span>
+                                                <span *ngIf="marc852.l != ''"><b>l#</b> {{marc852.l}} </span>
+                                                <span *ngIf="marc852.t != ''"><b>t#</b> {{marc852.t}} </span>
+                                                <span *ngIf="marc852.i != ''"><b>i#</b> {{marc852.i}} </span>
+                                                <span *ngIf="marc852['8'] != ''"><b>8#</b> {{marc852['8']}} </span>
+                                            </div>
+                                            <div>
+                                                <span *ngIf="marc852.otherinfo && marc852.otherinfo != ''"><i translate>Translate.otherinfotext </i>{{marc852.otherinfo}}</span>
+                                            </div>
+                                        </div>
+                                        <div class="holding-row-actions"
+                                            *ngIf="config?.proxyUrl && librisholding.holdingurl">
+                                            <button mat-icon-button
+                                                (click)="editHolding(pageitem, librisholding, getLibraryName(librisholding.sigel), i)"
+                                                [title]="'Translate.holding_editrow' | translate">
+                                                <mat-icon>edit</mat-icon>
+                                            </button>
+                                            <button mat-icon-button *ngIf="librisholding.marc_852.length > 1"
+                                                (click)="deleteHoldingRow(librisholding, i)"
+                                                [title]="'Translate.holding_deleterow' | translate">
+                                                <mat-icon>delete_outline</mat-icon>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                                 <ng-template #elseBlock>Det finns ett tomt bestånd i Libris</ng-template>
+                            </div>
+                            <div class="holding-buttons" *ngIf="config?.proxyUrl && librisholding.holdingurl">
+                                <button mat-stroked-button
+                                    (click)="addHoldingRow(librisholding, getLibraryName(librisholding.sigel))">
+                                    <mat-icon>add</mat-icon> {{ 'Translate.holding_add' | translate }}
+                                </button>
+                                <button mat-stroked-button color="warn"
+                                    (click)="deleteHolding(pageitem, librisholding, getLibraryName(librisholding.sigel))">
+                                    <mat-icon>delete</mat-icon>
+                                    {{ (librisholding.marc_852.length > 1 ? 'Translate.holding_deleteall' : 'Translate.holding_delete') | translate }}
+                                </button>
                             </div>
                             <div *ngIf="librisholding.otherinfo" style="padding-left: 0px; padding-bottom: 10px">
                                 <i translate>Translate.otherinfotext </i>{{librisholding.otherinfo}}
@@ -117,12 +117,15 @@
                     *ngIf="pageitem.librisitem.librisholdings.length == 0 && pageitem.librisitem.librisinstance">
                     <i class="material-icons md-30 icon-red">error</i> {{pageitem.librisitem.errormessage}}
                 </mat-card-content>
-                <mat-card-actions
+                <mat-card-content
                     *ngIf="config?.proxyUrl && pageitem.librisitem.librisinstance && pageitem.librisitem.instanceid && getCreateOptions(pageitem).length > 0">
-                    <button mat-button color="primary" (click)="createHolding(pageitem)">
-                        <mat-icon>add</mat-icon> {{ 'Translate.holding_create' | translate }}
-                    </button>
-                </mat-card-actions>
+                    <div class="no-holding-row" *ngFor="let option of getCreateOptions(pageitem)">
+                        <span><b>{{option.libraryname}} ({{option.sigel}})</b> – {{ 'Translate.holding_noholding' | translate }}</span>
+                        <button mat-stroked-button (click)="createHolding(pageitem, option.sigel)">
+                            <mat-icon>add</mat-icon> {{ 'Translate.holding_add' | translate }}
+                        </button>
+                    </div>
+                </mat-card-content>
             </mat-card>
         </div>
     </div>

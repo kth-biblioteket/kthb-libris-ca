@@ -355,14 +355,14 @@ export class MainComponent implements OnInit, OnDestroy {
   /**
    * Öppnar dialog för att skapa ett helt nytt bestånd (för ett bibliotek utan bestånd) på posten
    */
-  createHolding(pageitem: any) {
+  createHolding(pageitem: any, sigel?: string) {
     this.dialog
       .open(HoldingDialogComponent, {
         width: '400px',
         data: {
           mode: 'create',
           instanceid: pageitem.librisitem.instanceid,
-          sigeloptions: this.getCreateOptions(pageitem),
+          sigeloptions: this.getCreateOptions(pageitem).filter(o => !sigel || o.sigel === sigel),
           proxyUrl: this.config.proxyUrl, authToken: this.authToken
         }
       })

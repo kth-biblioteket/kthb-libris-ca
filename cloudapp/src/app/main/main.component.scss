@@ -68,3 +68,71 @@ mat-card { margin-bottom: 5px;}
   border-left: 5px solid #1976d2;
   background-color: rgba(25, 118, 210, 0.08);
 }
+
+/* Beståndsrad: texten får bryta rad, ikonerna ligger kvar i en egen kolumn till höger */
+.holding-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.holding-row-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.holding-row-actions {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  margin-top: -6px;
+}
+
+.holding-row-actions button[mat-icon-button] {
+  width: 32px;
+  height: 32px;
+  line-height: 32px;
+}
+
+.holding-row-actions .mat-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  line-height: 20px;
+}
+
+.holding-buttons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 6px 0 12px;
+}
+
+/* Kompakta knappar så att Lägg till och Ta bort ryms bredvid varandra i den smala panelen */
+.holding-buttons button.mat-stroked-button,
+.no-holding-row button.mat-stroked-button {
+  padding: 0 8px;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 30px;
+  white-space: nowrap;
+}
+
+.holding-buttons .mat-icon,
+.no-holding-row .mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  line-height: 16px;
+  margin-right: 2px;
+  vertical-align: -3px;
+}
+
+.no-holding-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
