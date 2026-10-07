@@ -8,7 +8,6 @@
       "connectSrc": [
          "self",
          "localhost/",
-         "http://localhost:90/",
          "https://api-ref.lib.kth.se/",
          "https://ref.lib.kth.se/",
          "https://libris-qa.kb.se/",
