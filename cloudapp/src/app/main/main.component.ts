@@ -565,6 +565,21 @@ export class MainComponent implements OnInit, OnDestroy {
     setTimeout(() => window.scrollTo(0, 0), 0);
   }
 
+  /**
+   * Efter ångra: finns posten i den lista som visas laddas listan om (så posten uppdateras och markeras),
+   * annars visas posten ensam. Listan ersätts alltså inte av en enskild post.
+   */
+  reloadAfterUndo(mmsId: string) {
+    const entity = (this.entities || []).find(e => e.id === mmsId || String(e.link || '').indexOf('/bibs/' + mmsId) === 0);
+    if (!entity) {
+      this.showPostByMms(mmsId);
+      return;
+    }
+    this.pendingScrollId = entity.id;
+    this.selectedId = entity.id;
+    this.processEntities();
+  }
+
   async copyMms(mmsId: string) {
     try {
       await navigator.clipboard.writeText(mmsId);
@@ -598,7 +613,7 @@ export class MainComponent implements OnInit, OnDestroy {
           });
           if (done.libris) { this.alert.success(this.translate.instant('Translate.undo_done')); }
           if (done.alma) { this.alert.success(this.translate.instant('Translate.undo_donealma')); }
-          this.showPostByMms(entry.mmsId);
+          this.reloadAfterUndo(entry.mmsId);
         }
       });
   }
