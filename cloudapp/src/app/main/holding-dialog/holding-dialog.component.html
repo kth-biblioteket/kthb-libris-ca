@@ -20,8 +20,8 @@
 
   <div *ngIf="isForm && !preview">
     <div *ngFor="let row of edited; index as k" style="padding-bottom: 10px">
-      <mat-form-field *ngFor="let field of ['c','h','j','l','t','i']" style="width: 45%; margin-right: 8px">
-        <mat-label>{{field}}#</mat-label>
+      <mat-form-field *ngFor="let field of fields" style="width: 45%; margin-right: 8px">
+        <mat-label>{{field}}# {{ 'Translate.field_' + field | translate }}</mat-label>
         <input matInput [(ngModel)]="row[field]" [name]="field + k">
       </mat-form-field>
     </div>
@@ -43,14 +43,14 @@
   <div *ngIf="mode == 'delete'">
     <p>{{ 'Translate.holding_deleteconfirm' | translate: { count: holding.marc_852?.length, library: libraryname + ' (' + holding.sigel + ')' } }}</p>
     <div *ngFor="let r of holding.marc_852" style="font-size: 12px; border-left: 2px solid #999; padding-left: 8px; margin-bottom: 4px">
-      <ng-container *ngFor="let field of ['c','h','j','l','t','i']"><span *ngIf="r[field]"><b>{{field}}#</b> {{r[field]}} </span></ng-container>
+      <ng-container *ngFor="let field of fields"><span *ngIf="r[field]"><b>{{field}}#</b> {{r[field]}} </span></ng-container>
     </div>
   </div>
 
   <div *ngIf="mode == 'deleteRow'">
     <p>{{ 'Translate.holding_deleterowconfirm' | translate }}</p>
     <p>
-      <ng-container *ngFor="let field of ['c','h','j','l','t','i']">
+      <ng-container *ngFor="let field of fields">
         <span *ngIf="row[field]"><b>{{field}}#</b> {{row[field]}} </span>
       </ng-container>
     </p>

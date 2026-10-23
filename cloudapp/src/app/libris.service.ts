@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from "@angular/common/http";
 import { TranslateService } from '@ngx-translate/core';
+import { DEFAULT_FIELDS, fieldByCode, normalizeFields, readRow, writeFieldValue } from './models/holding-fields';
 
 @Injectable()
 export class LibrisService {
@@ -196,155 +197,32 @@ export class LibrisService {
                             //Länk till post i Libris katalogisering
                             librisholdings[holdingsindex].link = librisholdingslink
 
-                            //Skapa ett 852-fält
+                            //Skapa en rad (852) per komponent (hasComponent, flera exemplar på samma holding)
+                            //eller en enda rad av beståndet självt. Alla stödda delfält läses (se holding-fields.ts).
                             librisholdings[holdingsindex].marc_852 = []
                             let tempstring = "";
 
-                            //Det finns två olika typer i Libris
-                            //Antingen "hasComponent" där det finns flera items på samma holding.
-                            if (librisresult.mainEntity.hasComponent) {
-                                for (let k = 0; k < librisresult.mainEntity.hasComponent.length; k++) {
-                                    
-                                    librisholdings[holdingsindex].marc_852[k] = {}
-
-                                    //852 #8 LÄNK- OCH SEKVENSNUMMER
-                                    librisholdings[holdingsindex].marc_852[k]["8"] = "";
-                                    if (librisresult.mainEntity["marc:groupid"]) {
-                                        librisholdings[holdingsindex].marc_852[k]["8"] = librisresult.mainEntity["marc:groupid"]
-                                    }
-
-                                    //852 #b SIGEL
-                                    librisholdings[holdingsindex].marc_852[k].b = librisholdings[holdingsindex].sigel
-
-                                    //852 #c SAMLING
-                                    librisholdings[holdingsindex].marc_852[k].c = "";
-                                    if (librisresult.mainEntity.hasComponent[k].physicalLocation) {
-                                        for (let l = 0; l < librisresult.mainEntity.hasComponent[k].physicalLocation.length; l++) {
-                                            tempstring += librisresult.mainEntity.hasComponent[k].physicalLocation[l] + " ";
-                                        }
-                                        librisholdings[holdingsindex].marc_852[k].c = tempstring;
-                                    }
-                                    //852 #h HYLLKOD
-                                    librisholdings[holdingsindex].marc_852[k].h = "";
-                                    if (librisresult.mainEntity.hasComponent[k].shelfMark) {
-                                        tempstring = "";
-
-                                        if (Array.isArray(librisresult.mainEntity.hasComponent[k].shelfMark)) {
-                                            for (let l = 0; l < librisresult.mainEntity.hasComponent[k].shelfMark.length; l++) {
-                                                if (Array.isArray(librisresult.mainEntity.hasComponent[k].shelfMark[l].label)) {
-                                                    tempstring += librisresult.mainEntity.hasComponent[k].shelfMark[l].label[0];
-                                                } else {
-                                                    tempstring += librisresult.mainEntity.hasComponent[k].shelfMark[l].label;
-                                                }
+                            const hasComponents = !!librisresult.mainEntity.hasComponent;
+                            const rowNodes = hasComponents ? librisresult.mainEntity.hasComponent : [librisresult.mainEntity];
+                            const groupid = librisresult.mainEntity["marc:groupid"] || "";
+                            for (let k = 0; k < rowNodes.length; k++) {
+                                const row = readRow(rowNodes[k], librisholdings[holdingsindex].sigel, groupid);
+                                if (hasComponents) {
+                                    //Övrig information per komponent
+                                    row.otherinfo = "";
+                                    const units = rowNodes[k]["marc:hasTextualHoldingsBasicBibliographicUnit"];
+                                    if (units) {
+                                        for (let l = 0; l < units.length; l++) {
+                                            if (units[l]["marc:publicNote"]) {
+                                                row.otherinfo += units[l]["marc:publicNote"][0] + " | ";
                                             }
-                                            librisholdings[holdingsindex].marc_852[k].h = tempstring;
-                                        } else {
-                                            if (Array.isArray(librisresult.mainEntity.hasComponent[k].shelfMark.label)) {
-                                                librisholdings[holdingsindex].marc_852[k].h = librisresult.mainEntity.hasComponent[k].shelfMark.label[0];
-                                            } else {
-                                                librisholdings[holdingsindex].marc_852[k].h = librisresult.mainEntity.hasComponent[k].shelfMark.label;
-                                            }
-                                        }
-                                    }
-                                    //852 #j LÖPNUMMER
-                                    librisholdings[holdingsindex].marc_852[k].j = "";
-                                    if (librisresult.mainEntity.hasComponent[k].shelfControlNumber) {
-                                        librisholdings[holdingsindex].marc_852[k].j = librisresult.mainEntity.hasComponent[k].shelfControlNumber;
-                                    }
-                                    //852 #l UPPSTÄLLNINGSORD
-                                    librisholdings[holdingsindex].marc_852[k].l = "";
-                                    if (librisresult.mainEntity.hasComponent[k].shelfLabel) {
-                                        librisholdings[holdingsindex].marc_852[k].l = librisresult.mainEntity.hasComponent[k].shelfLabel;
-                                    }
-                                    //852 #t EXEMPLARNUMMER
-                                    librisholdings[holdingsindex].marc_852[k].t = "";
-                                    if (librisresult.mainEntity.hasComponent[k].copyNumber) {
-                                        librisholdings[holdingsindex].marc_852[k].t = librisresult.mainEntity.hasComponent[k].copyNumber;
-                                    }
-                                    //852 #i EXEMPLARSTATUS
-                                    librisholdings[holdingsindex].marc_852[k].i = "";
-                                    if (librisresult.mainEntity.hasComponent[k].availability) {
-                                        librisholdings[holdingsindex].marc_852[k].i = librisresult.mainEntity.hasComponent[k].availability[0].label;
-                                    }
-
-                                    // 852 otherinfo
-                                    librisholdings[holdingsindex].marc_852[k].otherinfo = "";
-                                    
-                                    if (librisresult.mainEntity.hasComponent[k]["marc:hasTextualHoldingsBasicBibliographicUnit"]) {
-                                        for (let l = 0; l < librisresult.mainEntity.hasComponent[k]["marc:hasTextualHoldingsBasicBibliographicUnit"].length; l++) {
-                                            if (librisresult.mainEntity.hasComponent[k]["marc:hasTextualHoldingsBasicBibliographicUnit"][l]["marc:publicNote"]) {
-                                                librisholdings[holdingsindex].marc_852[k].otherinfo += librisresult.mainEntity.hasComponent[k]["marc:hasTextualHoldingsBasicBibliographicUnit"][l]["marc:publicNote"][0] + " | ";
-                                            }
-                                            if (librisresult.mainEntity.hasComponent[k]["marc:hasTextualHoldingsBasicBibliographicUnit"][l]["marc:textualString"]) {
-                                                librisholdings[holdingsindex].marc_852[k].otherinfo += librisresult.mainEntity.hasComponent[k]["marc:hasTextualHoldingsBasicBibliographicUnit"][l]["marc:textualString"] + " | ";
+                                            if (units[l]["marc:textualString"]) {
+                                                row.otherinfo += units[l]["marc:textualString"] + " | ";
                                             }
                                         }
                                     }
                                 }
-                            } else {
-                            //Eller poster med endast ett item per holding.
-                                tempstring = "";
-                                librisholdings[holdingsindex].marc_852[0] = {}
-
-                                //852 #8 LÄNK- OCH SEKVENSNUMMER
-                                librisholdings[holdingsindex].marc_852[0]["8"] = "";
-                                if (librisresult.mainEntity["marc:groupid"]) {
-                                    librisholdings[holdingsindex].marc_852[0]["8"] = librisresult.mainEntity["marc:groupid"]
-                                }
-
-                                //852 #b SIGEL
-                                librisholdings[holdingsindex].marc_852[0].b = librisholdings[holdingsindex].sigel
-
-                                //852 #c SAMLING
-                                librisholdings[holdingsindex].marc_852[0].c = "";
-                                if (librisresult.mainEntity.physicalLocation) {
-                                    for (let l = 0; l < librisresult.mainEntity.physicalLocation.length; l++) {
-                                        tempstring += librisresult.mainEntity.physicalLocation[l] + " ";
-                                    }
-                                    librisholdings[holdingsindex].marc_852[0].c = tempstring;
-                                }
-                                //852 #h HYLLKOD
-                                librisholdings[holdingsindex].marc_852[0].h = "";
-                                if (librisresult.mainEntity.shelfMark) {
-                                    tempstring = ""
-                                    
-                                    if (Array.isArray(librisresult.mainEntity.shelfMark)) {
-                                        for (let l = 0; l < librisresult.mainEntity.shelfMark.length; l++) {
-                                            if (Array.isArray(librisresult.mainEntity.shelfMark[l].label)) {
-                                                tempstring += librisresult.mainEntity.shelfMark[l].label[0] + " ";
-                                            } else {
-                                                tempstring += librisresult.mainEntity.shelfMark[l].label + " ";
-                                            } 
-                                        }
-                                        librisholdings[holdingsindex].marc_852[0].h = tempstring;
-                                    } else {
-                                        if (Array.isArray(librisresult.mainEntity.shelfMark.label)) {
-                                            librisholdings[holdingsindex].marc_852[0].h = librisresult.mainEntity.shelfMark.label[0] + " ";
-                                        } else {
-                                            librisholdings[holdingsindex].marc_852[0].h = librisresult.mainEntity.shelfMark.label + " ";
-                                        }
-                                    }
-                                }
-                                //852 #j LÖPNUMMER
-                                librisholdings[holdingsindex].marc_852[0].j = "";
-                                if (librisresult.mainEntity.shelfControlNumber) {
-                                    librisholdings[holdingsindex].marc_852[0].j = librisresult.mainEntity.shelfControlNumber;
-                                }
-                                //852 #l UPPSTÄLLNINGSORD
-                                librisholdings[holdingsindex].marc_852[0].l = "";
-                                if (librisresult.mainEntity.shelfLabel) {
-                                    librisholdings[holdingsindex].marc_852[0].l = librisresult.mainEntity.shelfLabel;
-                                }
-                                //852 #t EXEMPLARNUMMER
-                                librisholdings[holdingsindex].marc_852[0].t = "";
-                                if (librisresult.mainEntity.copyNumber) {
-                                    librisholdings[holdingsindex].marc_852[0].t = librisresult.mainEntity.copyNumber;
-                                }
-                                //852 #i EXEMPLARSTATUS
-                                librisholdings[holdingsindex].marc_852[0].i = "";
-                                if (librisresult.mainEntity.availability) {
-                                    librisholdings[holdingsindex].marc_852[0].i = librisresult.mainEntity.availability[0].label;
-                                }
+                                librisholdings[holdingsindex].marc_852[k] = row;
                             }
 
                             tempstring = ""
@@ -407,9 +285,14 @@ export class LibrisService {
     }
 
     /**
-     * Fälten i 852 som kan ändras i Libris
+     * Delfält i 852 som finns i formulären (Lägg till/Redigera) och därmed kan ändras i Libris.
+     * Ställs in från konfigurationen (setFormFields), standard c, h, j, l, t, i.
      */
-    editableFields = ['c', 'h', 'j', 'l', 't', 'i'];
+    editableFields: string[] = DEFAULT_FIELDS.slice();
+
+    setFormFields(fields: any) {
+        this.editableFields = normalizeFields(fields);
+    }
 
     /**
      * Jämför ursprungliga och redigerade 852-fält och returnerar de ändringar som gjorts
@@ -430,37 +313,9 @@ export class LibrisService {
     }
 
     private setField(target: any, field: string, value: string) {
-        const keepOrDelete = (prop: string, newvalue: any) => {
-            if (value === '') { delete target[prop]; } else { target[prop] = newvalue; }
-        };
-        switch (field) {
-            case 'c':
-                keepOrDelete('physicalLocation', [value]);
-                break;
-            case 'h': {
-                const existing = Array.isArray(target.shelfMark) ? target.shelfMark[0] : target.shelfMark;
-                //Behåll befintlig form på label (lista/sträng). Ny hyllkod får sträng.
-                const labelIsArray = !!existing && Array.isArray(existing.label);
-                const shelfmark = { ...(existing || { '@type': 'ShelfMarkSequence' }), label: labelIsArray ? [value] : value };
-                keepOrDelete('shelfMark', Array.isArray(target.shelfMark) ? [shelfmark] : shelfmark);
-                break;
-            }
-            case 'j':
-                keepOrDelete('shelfControlNumber', value);
-                break;
-            case 'l':
-                keepOrDelete('shelfLabel', value);
-                break;
-            case 't':
-                keepOrDelete('copyNumber', value);
-                break;
-            case 'i': {
-                const availability = Array.isArray(target.availability) ? target.availability : [];
-                const existing = availability[0] || {};
-                availability[0] = { ...existing, label: Array.isArray(existing.label) ? [value] : value };
-                keepOrDelete('availability', availability);
-                break;
-            }
+        const definition = fieldByCode(field);
+        if (definition) {
+            writeFieldValue(target, definition, value);
         }
     }
 

@@ -11,6 +11,7 @@ import { Observable, iif, of } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
 import { ErrorMessages } from '../static/error.component';
 import {Configuration} from '../models/configuration';
+import { HOLDING_FIELDS, normalizeFields, DEFAULT_FIELDS } from '../models/holding-fields';
 import {LibrisSigelTemplate} from "../models/libris-sigel-template";
 import {MatDialog} from "@angular/material/dialog";
 import {ConfigurationDialogComponent} from "./configuration-dialog/configuration-dialog.component";
@@ -63,6 +64,21 @@ export class ConfigurationComponent implements OnInit {
     }
   }
 
+  //Delfält i 852 att välja bland (se models/holding-fields.ts)
+  holdingFields = HOLDING_FIELDS;
+  displayFields: string[] = DEFAULT_FIELDS.slice();
+  formFields: string[] = DEFAULT_FIELDS.slice();
+
+  isChecked(list: 'displayFields' | 'formFields', code: string): boolean {
+    return this[list].includes(code);
+  }
+
+  toggleField(list: 'displayFields' | 'formFields', code: string, checked: boolean) {
+    const current = this[list].filter(c => c !== code);
+    this[list] = normalizeFieldsKeepEmpty(checked ? current.concat(code) : current);
+    this.form.markAsDirty();
+  }
+
   ngOnInit() {
     this.loading = true
     this.form = this.fb.group({
@@ -78,6 +94,8 @@ export class ConfigurationComponent implements OnInit {
         result = new Configuration();
       }
       this.configuration = result;
+      this.displayFields = normalizeFields(result.displayFields);
+      this.formFields = normalizeFields(result.formFields);
       this.configService.getAsFormGroup().subscribe( config => {
         if (Object.keys(config.value).length!=0) {
           this.form = config;
@@ -100,9 +118,15 @@ export class ConfigurationComponent implements OnInit {
   }
 
   save() {
+    if (this.displayFields.length === 0 || this.formFields.length === 0) {
+      this.alert.error('Select at least one field in each of the two columns (shown on the card / in the forms).');
+      return;
+    }
     this.saving = true;
     this.configuration.proxyUrl = this.form.value.proxyUrl
     this.configuration.librisUrl = this.form.value.librisUrl
+    this.configuration.displayFields = this.displayFields
+    this.configuration.formFields = this.formFields
     this.configService.set(this.configuration).subscribe(
       () => {
         this.alert.success('Configuration successfully saved.')
@@ -120,6 +144,10 @@ export class ConfigurationComponent implements OnInit {
         this.configuration.proxyUrl = "";
         this.configuration.librisUrl = "";
         this.configuration.LibrisSigelTemplate = [];
+        this.configuration.displayFields = [];
+        this.configuration.formFields = [];
+        this.displayFields = DEFAULT_FIELDS.slice();
+        this.formFields = DEFAULT_FIELDS.slice();
         this.form.reset()
         this.form.markAsPristine();
       },
@@ -194,4 +222,8 @@ export class ConfigurationGuard implements CanActivate {
       })
     );
   }
+}
+//Som normalizeFields men en tom lista förblir tom (så att man kan avmarkera allt innan man väljer om)
+function normalizeFieldsKeepEmpty(list: string[]): string[] {
+  return HOLDING_FIELDS.map(f => f.code).filter(code => list.includes(code));
 }

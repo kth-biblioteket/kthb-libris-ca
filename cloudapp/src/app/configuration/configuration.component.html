@@ -65,5 +65,24 @@
         <input matInput placeholder="Proxy URL" formControlName="proxyUrl">
       </mat-form-field>
     </form>
+
+    <h4 style="margin-top: 16px">{{ 'Translate.fields_title' | translate }}</h4>
+    <p style="font-size: 12px">{{ 'Translate.fields_help' | translate }}</p>
+    <table style="width: 100%; font-size: 12px; border-collapse: collapse">
+      <tr style="text-align: left">
+        <th>852</th>
+        <th>{{ 'Translate.fields_name' | translate }}</th>
+        <th style="text-align: center">{{ 'Translate.fields_display' | translate }}</th>
+        <th style="text-align: center">{{ 'Translate.fields_form' | translate }}</th>
+      </tr>
+      <tr *ngFor="let f of holdingFields" style="border-top: 0.5px solid #ccc">
+        <td style="padding: 4px 0"><b>${{f.code}}</b></td>
+        <td>{{ 'Translate.field_' + f.code | translate }}<br><span style="color: #777">{{f.property}}</span></td>
+        <td style="text-align: center"><input type="checkbox" [checked]="isChecked('displayFields', f.code)"
+            (change)="toggleField('displayFields', f.code, $any($event.target).checked)"></td>
+        <td style="text-align: center"><input type="checkbox" [checked]="isChecked('formFields', f.code)"
+            (change)="toggleField('formFields', f.code, $any($event.target).checked)"></td>
+      </tr>
+    </table>
   </mat-card-content>
 </mat-card>

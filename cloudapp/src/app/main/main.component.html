@@ -84,18 +84,15 @@
                         <div *ngIf="librisholding.marc_852">
                             <div *ngFor="let marc852 of librisholding.marc_852;index as i"
                                 style="padding-left: 0px; padding-bottom: 20px">
-                                <div *ngIf="marc852.c != '' || marc852.h != ''  || marc852.j != ''  || marc852.l != '' || marc852.t != '' || marc852.i != '' ; else elseBlock"
+                                <div *ngIf="rowHasContent(marc852); else elseBlock"
                                     style="padding-left: 0px; padding-bottom: 5px">
                                     <div class="holding-row">
                                         <div class="holding-row-text">
                                             <div>
                                                 <i translate>Translate.locationtext </i>
-                                                <span *ngIf="marc852.c != ''"><b>c#</b> {{marc852.c}} </span>
-                                                <span *ngIf="marc852.h != ''"><b>h#</b> {{marc852.h}} </span>
-                                                <span *ngIf="marc852.j != ''"><b>j#</b> {{marc852.j}} </span>
-                                                <span *ngIf="marc852.l != ''"><b>l#</b> {{marc852.l}} </span>
-                                                <span *ngIf="marc852.t != ''"><b>t#</b> {{marc852.t}} </span>
-                                                <span *ngIf="marc852.i != ''"><b>i#</b> {{marc852.i}} </span>
+                                                <ng-container *ngFor="let f of displayFields">
+                                                    <span *ngIf="marc852[f]"><b>{{f}}#</b> {{marc852[f]}} </span>
+                                                </ng-container>
                                                 <span *ngIf="marc852['8'] != ''"><b>8#</b> {{marc852['8']}} </span>
                                             </div>
                                             <div>

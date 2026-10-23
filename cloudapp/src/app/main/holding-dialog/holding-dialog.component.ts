@@ -82,6 +82,11 @@ export class HoldingDialogComponent implements OnInit {
     return text === key ? reason : text;
   }
 
+  //Delfält i formulären (konfigurationen)
+  get fields(): string[] {
+    return this.librisservice.editableFields;
+  }
+
   get isForm() {
     return this.mode == 'edit' || this.mode == 'add' || this.mode == 'create';
   }

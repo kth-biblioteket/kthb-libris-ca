@@ -16,6 +16,7 @@ import { LibrisItem } from '../models/librisitem';
 import { HoldingDialogComponent } from './holding-dialog/holding-dialog.component';
 import { AlmaDeleteDialogComponent } from './alma-delete-dialog/alma-delete-dialog.component';
 import { HistoryService, DeletedEntry } from '../history.service';
+import { DEFAULT_FIELDS, normalizeFields } from '../models/holding-fields';
 import { UndoDialogComponent } from './undo-dialog/undo-dialog.component';
 
 @Component({
@@ -35,6 +36,9 @@ export class MainComponent implements OnInit, OnDestroy {
   entities: Entity[];
   selectedEntity: Entity;
   selectedId: string = null;
+
+  //852-delfält som visas på raderna i kortet (konfigurationen), formulärens fält ligger i librisservice.editableFields
+  displayFields: string[] = DEFAULT_FIELDS.slice();
   private loadGeneration = 0;
   //Listan i sin ursprungliga ordning, så den kan visas rätt igen när en enskild post stängts
   private baseEntities: any[] = [];
@@ -88,6 +92,8 @@ export class MainComponent implements OnInit, OnDestroy {
         } else {
           this.config = conf;
           this.sigels = this.config.LibrisSigelTemplate;
+          this.displayFields = normalizeFields(conf.displayFields);
+          this.librisservice.setFormFields(conf.formFields);
           this.pageLoad()
         }
       })
@@ -542,8 +548,13 @@ export class MainComponent implements OnInit, OnDestroy {
     }
   }
 
+  //Har raden något värde i de fält som visas?
+  rowHasContent(row: any): boolean {
+    return this.displayFields.some(f => row && row[f] && String(row[f]).trim() !== '');
+  }
+
   rowText(row: any): string {
-    return ['c', 'h', 'j', 'l', 't', 'i']
+    return this.displayFields
       .filter(f => row && row[f] && String(row[f]).trim() !== '')
       .map(f => f + '# ' + String(row[f]).trim())
       .join(' ');

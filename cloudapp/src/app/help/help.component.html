@@ -24,6 +24,7 @@
         <p>Link to libris:  https://libris.kb.se (https://libris-qa.kb.se for Libris sandbox)</p>
 
         <p>The proxy URL is used when editing or deleting holdings in Libris. Use the almatools-api Libris proxy, e.g. https://&lt;host&gt;/almatools/v1/libris. It validates the Alma token and forwards PUT and DELETE requests to the Libris XL API with its own authorization token. If the field is empty the edit and delete buttons are hidden.</p>
+        <p>On the configuration page you can also choose which MARC 852 subfields are shown on the rows in the card and which are available in the Add and Edit forms (default: $c, $h, $j, $l, $t and $i). Fields that are not in the forms are never changed in Libris. Repeatable subfields are edited with | between the values.</p>
         <img width="90%" src="./assets/help_1.png">
 
         </mat-card-content>  
