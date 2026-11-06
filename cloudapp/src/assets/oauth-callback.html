@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<title>Libris Login</title>
+</head>
+<body style="font-family: sans-serif">
+<p id="msg">Slutför inloggning…</p>
+<script>
+  // Implicit flow: token ligger i fragmentet (#access_token=…&state=…), fel i fragment eller query.
+  (function () {
+    var raw = location.hash.replace(/^#/, '') || location.search.replace(/^\?/, '');
+    var p = new URLSearchParams(raw);
+    var result = {
+      type: 'libris-auth',
+      access_token: p.get('access_token'),
+      expires_in: p.get('expires_in'),
+      state: p.get('state'),
+      error: p.get('error'),
+      error_description: p.get('error_description')
+    };
+    var msg = document.getElementById('msg');
+    if (window.opener) {
+      // Popupen kan ha ogenomskinlig origin när Almas sandbox ärvs; mottagaren kontrollerar state och source.
+      window.opener.postMessage(result, '*');
+      msg.textContent = result.access_token ? 'Inloggad. Fönstret stängs.' : 'Inloggningen misslyckades.';
+      window.close();
+    } else {
+      msg.textContent = 'Det här fönstret ska öppnas från appen.';
+    }
+    history.replaceState(null, '', location.pathname);
+  })();
+</script>
+</body>
+</html>
