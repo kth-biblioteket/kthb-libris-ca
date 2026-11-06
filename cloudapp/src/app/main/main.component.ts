@@ -17,6 +17,8 @@ import { HoldingDialogComponent } from './holding-dialog/holding-dialog.componen
 import { AlmaDeleteDialogComponent } from './alma-delete-dialog/alma-delete-dialog.component';
 import { HistoryService, DeletedEntry } from '../history.service';
 import { DEFAULT_FIELDS, normalizeFields } from '../models/holding-fields';
+import { LibrisWriter } from '../libris.service';
+import { LibrisAuthService } from '../libris-auth.service';
 import { UndoDialogComponent } from './undo-dialog/undo-dialog.component';
 
 @Component({
@@ -69,6 +71,7 @@ export class MainComponent implements OnInit, OnDestroy {
     private translate: TranslateService,
     private alert: AlertService,
     private librisservice: LibrisService,
+    public auth: LibrisAuthService,
     private history: HistoryService,
     private dialog: MatDialog
     ) { } 
@@ -410,7 +413,7 @@ export class MainComponent implements OnInit, OnDestroy {
     this.dialog
       .open(HoldingDialogComponent, {
         width: '400px',
-        data: { mode: 'edit', holding: holding, rowIndex: rowIndex, proxyUrl: this.config.proxyUrl, authToken: this.authToken, libraryname: libraryname }
+        data: { mode: 'edit', holding: holding, rowIndex: rowIndex, writer: this.writer(), libraryname: libraryname }
       })
       .afterClosed()
       .subscribe(result => {
@@ -448,7 +451,7 @@ export class MainComponent implements OnInit, OnDestroy {
           mode: 'create',
           instanceid: pageitem.librisitem.instanceid,
           sigeloptions: this.getCreateOptions(pageitem).filter(o => !sigel || o.sigel === sigel),
-          proxyUrl: this.config.proxyUrl, authToken: this.authToken
+          writer: this.writer()
         }
       })
       .afterClosed()
@@ -469,7 +472,7 @@ export class MainComponent implements OnInit, OnDestroy {
     this.dialog
       .open(HoldingDialogComponent, {
         width: '400px',
-        data: { mode: 'add', holding: holding, proxyUrl: this.config.proxyUrl, authToken: this.authToken, libraryname: libraryname }
+        data: { mode: 'add', holding: holding, writer: this.writer(), libraryname: libraryname }
       })
       .afterClosed()
       .subscribe(result => {
@@ -614,7 +617,7 @@ export class MainComponent implements OnInit, OnDestroy {
     this.dialog
       .open(UndoDialogComponent, {
         width: '480px',
-        data: { entry: entry, snapshot: snapshot, proxyUrl: this.config.proxyUrl, authToken: this.authToken }
+        data: { entry: entry, snapshot: snapshot, writer: this.writer() }
       })
       .afterClosed()
       .subscribe(async done => {
@@ -659,7 +662,7 @@ export class MainComponent implements OnInit, OnDestroy {
     this.dialog
       .open(HoldingDialogComponent, {
         width: '400px',
-        data: { mode: 'deleteRow', holding: holding, rowIndex: rowIndex, almaCheck: this.almaCheckData(pageitem, holding.sigel), proxyUrl: this.config.proxyUrl, authToken: this.authToken, libraryname: this.getLibraryName(holding.sigel) }
+        data: { mode: 'deleteRow', holding: holding, rowIndex: rowIndex, almaCheck: this.almaCheckData(pageitem, holding.sigel), writer: this.writer(), libraryname: this.getLibraryName(holding.sigel) }
       })
       .afterClosed()
       .subscribe(async result => {
@@ -690,7 +693,7 @@ export class MainComponent implements OnInit, OnDestroy {
     this.dialog
       .open(HoldingDialogComponent, {
         width: '400px',
-        data: { mode: 'delete', holding: holding, almaCheck: this.almaCheckData(pageitem, holding.sigel), proxyUrl: this.config.proxyUrl, authToken: this.authToken, libraryname: libraryname }
+        data: { mode: 'delete', holding: holding, almaCheck: this.almaCheckData(pageitem, holding.sigel), writer: this.writer(), libraryname: libraryname }
       })
       .afterClosed()
       .subscribe(async result => {
@@ -706,6 +709,29 @@ export class MainComponent implements OnInit, OnDestroy {
           this.openAlmaDelete(pageitem, holding.sigel, 'all', holding.marc_852, entryId);
         }
       });
+  }
+
+  /**
+   * Hur skrivningar görs just nu: direkt mot Libris om användaren är inloggad, annars via proxyn.
+   */
+  writer(): LibrisWriter {
+    if (this.config && this.auth.isLoggedIn() && this.config.librisUrl) {
+      return { direct: true, base: String(this.config.librisUrl), token: this.auth.getToken() };
+    }
+    if (this.config && this.config.proxyUrl) {
+      return { direct: false, base: String(this.config.proxyUrl), token: this.authToken };
+    }
+    return null;
+  }
+
+  canWrite(): boolean {
+    return !!this.writer();
+  }
+
+  librisLogin() {
+    this.auth.login(String(this.config.loginUrl), String(this.config.clientId), this.config.redirectUri ? String(this.config.redirectUri) : undefined)
+      .then(() => this.alert.success(this.translate.instant('Translate.login_ok')))
+      .catch(err => this.alert.error(this.translate.instant('Translate.login_failed') + ': ' + err.message));
   }
 
   setLang(lang: string) {

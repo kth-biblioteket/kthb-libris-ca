@@ -127,6 +127,13 @@
         "fields_help": "Choose which subfields are shown on the rows in the card and which are in the Add and Edit forms. The default is $c, $h, $j, $l, $t and $i. Repeatable fields are edited with | between the values. Fields that are not in the form are never changed in Libris.",
         "fields_name": "Name / Libris property",
         "fields_display": "Shown in the card",
-        "fields_form": "In forms"
+        "fields_form": "In forms",
+        "login_button": "Log in to Libris",
+        "login_status": "Logged in to Libris",
+        "login_logout": "Log out",
+        "login_ok": "Logged in to Libris",
+        "login_expired": "Your Libris login has expired. Log in again and retry.",
+        "login_forbidden": "Your Libris account is not allowed to change holdings for this sigel.",
+        "login_failed": "Libris login failed"
     }
 }

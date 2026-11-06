@@ -1,7 +1,8 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { TranslateService } from '@ngx-translate/core';
-import { LibrisService } from '../../libris.service';
+import { LibrisService, LibrisWriter } from '../../libris.service';
+import { LibrisAuthService } from '../../libris-auth.service';
 import { AlmaService } from '../../alma.service';
 
 @Component({
@@ -17,8 +18,7 @@ export class HoldingDialogComponent implements OnInit {
   rowIndex: number;
   row: any;
   holding: any;
-  proxyUrl: string;
-  authToken: string;
+  writer: LibrisWriter;
   libraryname: string;
 
   original: any[];
@@ -38,7 +38,8 @@ export class HoldingDialogComponent implements OnInit {
     @Inject(MAT_DIALOG_DATA) public data: any,
     private librisservice: LibrisService,
     private alma: AlmaService,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private auth: LibrisAuthService
   ) {
     this.mode = data.mode;
     this.holding = data.holding || { sigel: '' };
@@ -47,8 +48,7 @@ export class HoldingDialogComponent implements OnInit {
     if (this.sigeloptions.length == 1) {
       this.selectedSigel = this.sigeloptions[0].sigel;
     }
-    this.proxyUrl = data.proxyUrl;
-    this.authToken = data.authToken;
+    this.writer = data.writer;
     this.libraryname = data.libraryname;
     this.rowIndex = data.rowIndex;
     this.row = this.holding.marc_852 ? this.holding.marc_852[this.rowIndex] : null;
@@ -106,18 +106,18 @@ export class HoldingDialogComponent implements OnInit {
     try {
       if (this.mode == 'create') {
         const newholding = await this.librisservice.createLibrisHolding(
-          this.instanceid, this.selectedSigel, this.edited[0], this.proxyUrl, this.authToken);
+          this.instanceid, this.selectedSigel, this.edited[0], this.writer);
         this.dialogRef.close({ newHolding: newholding });
         return;
       }
       if (this.mode == 'add') {
         const added = this.librisservice.addHoldingComponent(this.holding.holdinggraph, this.edited[0]);
-        const addresult = await this.librisservice.updateLibrisHolding(this.holding, added.graph, this.proxyUrl, this.authToken);
+        const addresult = await this.librisservice.updateLibrisHolding(this.holding, added.graph, this.writer);
         this.dialogRef.close({ graph: addresult.graph, etag: addresult.etag, newRow: this.edited[0], replacedEmpty: added.replacedEmpty });
         return;
       }
       const graph = this.librisservice.applyHoldingChanges(this.holding.holdinggraph, this.changes);
-      const result = await this.librisservice.updateLibrisHolding(this.holding, graph, this.proxyUrl, this.authToken);
+      const result = await this.librisservice.updateLibrisHolding(this.holding, graph, this.writer);
       this.dialogRef.close({ marc_852: this.edited, graph: result.graph, etag: result.etag, rowIndex: this.rowIndex });
     } catch (e) {
       this.error = this.errorMessage(e);
@@ -130,7 +130,7 @@ export class HoldingDialogComponent implements OnInit {
     this.error = '';
     try {
       const graph = this.librisservice.removeHoldingComponent(this.holding.holdinggraph, this.rowIndex);
-      const result = await this.librisservice.updateLibrisHolding(this.holding, graph, this.proxyUrl, this.authToken);
+      const result = await this.librisservice.updateLibrisHolding(this.holding, graph, this.writer);
       this.dialogRef.close({ graph: result.graph, etag: result.etag, removedIndex: this.rowIndex });
     } catch (e) {
       this.error = this.errorMessage(e);
@@ -142,7 +142,7 @@ export class HoldingDialogComponent implements OnInit {
     this.busy = true;
     this.error = '';
     try {
-      await this.librisservice.deleteLibrisHolding(this.holding, this.proxyUrl, this.authToken);
+      await this.librisservice.deleteLibrisHolding(this.holding, this.writer);
       this.dialogRef.close(true);
     } catch (e) {
       this.error = this.errorMessage(e);
@@ -151,6 +151,13 @@ export class HoldingDialogComponent implements OnInit {
   }
 
   private errorMessage(e: any) {
+    if (this.writer && this.writer.direct && e && e.status === 401) {
+      this.auth.logout();
+      return this.translate.instant('Translate.login_expired');
+    }
+    if (this.writer && this.writer.direct && e && e.status === 403) {
+      return this.translate.instant('Translate.login_forbidden');
+    }
     if (e && (e.status === 409 || e.status === 412)) {
       return this.translate.instant('Translate.holding_conflict');
     }

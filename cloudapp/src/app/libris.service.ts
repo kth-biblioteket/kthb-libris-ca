@@ -3,6 +3,16 @@ import { HttpClient, HttpHeaders } from "@angular/common/http";
 import { TranslateService } from '@ngx-translate/core';
 import { DEFAULT_FIELDS, fieldByCode, normalizeFields, readRow, writeFieldValue } from './models/holding-fields';
 
+/**
+ * Hur skrivningar går till Libris: direkt med användarens egen Libris-token (base = Libris adress),
+ * eller via proxyn med Alma-token (base = proxyns adress).
+ */
+export interface LibrisWriter {
+    direct: boolean;
+    base: string;
+    token: string;
+}
+
 @Injectable()
 export class LibrisService {
     constructor (
@@ -370,15 +380,16 @@ export class LibrisService {
     /**
      * Skickar en graf till Libris via proxy (POST /data) och returnerar svaret
      */
-    private async postGraph(graph: any, sigel: string, proxyUrl: string, authToken: string) {
+    private async postGraph(graph: any, sigel: string, writer: LibrisWriter) {
         const headers = new HttpHeaders({
-            'Authorization': 'Bearer ' + authToken,
+            'Authorization': 'Bearer ' + writer.token,
             'Accept': 'application/ld+json',
             'Content-Type': 'application/ld+json',
             'XL-Active-Sigel': sigel,
         });
         return this.http.post<any>(
-            proxyUrl.replace(/\/+$/, ''), graph, { headers: headers, observe: 'response' }
+            writer.direct ? writer.base.replace(/\/+$/, '') + '/data' : writer.base.replace(/\/+$/, ''),
+            graph, { headers: headers, observe: 'response' }
         ).toPromise();
     }
 
@@ -402,16 +413,16 @@ export class LibrisService {
     /**
      * Återskapar ett borttaget bestånd i Libris (nytt id). Returnerar adressen till det nya beståndet.
      */
-    async restoreLibrisHolding(oldGraph: any, sigel: string, proxyUrl: string, authToken: string): Promise<string> {
+    async restoreLibrisHolding(oldGraph: any, sigel: string, writer: LibrisWriter): Promise<string> {
         const graph = this.buildRestoredHolding(oldGraph);
-        const response = await this.postGraph(graph, sigel, proxyUrl, authToken);
+        const response = await this.postGraph(graph, sigel, writer);
         return response.headers.get('Location');
     }
 
     /**
      * Lägger tillbaka en borttagen rad (komponent) i ett bestånd som finns kvar i Libris.
      */
-    async restoreLibrisRow(holdingurl: string, sigel: string, component: any, index: number, proxyUrl: string, authToken: string) {
+    async restoreLibrisRow(holdingurl: string, sigel: string, component: any, index: number, writer: LibrisWriter) {
         const current = await this.http.get<any>(
             holdingurl.replace(/#.*$/, '') + '/data.jsonld?embellished=false',
             { headers: new HttpHeaders({ 'Accept': 'application/json+ld' }), observe: 'response' }
@@ -423,16 +434,16 @@ export class LibrisService {
         }
         mainEntity.hasComponent.splice(Math.min(index, mainEntity.hasComponent.length), 0, component);
         const holding = { holdingurl: holdingurl.replace(/#.*$/, ''), etag: current.headers.get('ETag'), sigel: sigel };
-        return this.updateLibrisHolding(holding, graph, proxyUrl, authToken);
+        return this.updateLibrisHolding(holding, graph, writer);
     }
 
     /**
      * Skapar ett nytt bestånd i Libris via proxy (POST) och läser sedan in det nya beståndet.
      * Returnerar ett holding-objekt i samma form som getLibrisItem.
      */
-    async createLibrisHolding(instanceid: string, sigel: string, values: any, proxyUrl: string, authToken: string) {
+    async createLibrisHolding(instanceid: string, sigel: string, values: any, writer: LibrisWriter) {
         const graph = this.buildNewHolding(instanceid, sigel, values);
-        const response = await this.postGraph(graph, sigel, proxyUrl, authToken);
+        const response = await this.postGraph(graph, sigel, writer);
 
         const location = response.headers.get('Location');
         if (!location) {
@@ -526,14 +537,17 @@ export class LibrisService {
     /**
      * URL till beståndet via proxyn (samma sökväg som i Libris)
      */
-    private holdingProxyUrl(holding: any, proxyUrl: string) {
-        return proxyUrl.replace(/\/+$/, '') + new URL(holding.holdingurl).pathname;
+    private holdingWriteUrl(holding: any, writer: LibrisWriter) {
+        // Direkt: beståndets egen adress. Via proxy: proxyns adress + samma sökväg.
+        return writer.direct
+            ? holding.holdingurl.replace(/#.*$/, '')
+            : writer.base.replace(/\/+$/, '') + new URL(holding.holdingurl).pathname;
     }
 
-    private writeHeaders(holding: any, authToken: string, contentType?: string) {
-        // Alma-token identifierar användaren mot proxyn, som själv lägger på Libris-token
+    private writeHeaders(holding: any, writer: LibrisWriter, contentType?: string) {
+        // Via proxy identifierar Alma-token användaren och proxyn lägger på Libris-token. Direkt är token Libris egen.
         let headers = new HttpHeaders({
-            'Authorization': 'Bearer ' + authToken,
+            'Authorization': 'Bearer ' + writer.token,
             'Accept': 'application/ld+json',
             'XL-Active-Sigel': holding.sigel,
         });
@@ -550,10 +564,10 @@ export class LibrisService {
      * Skriver ett uppdaterat bestånd till Libris via proxy (PUT).
      * Returnerar ny graf och ny etag.
      */
-    async updateLibrisHolding(holding: any, graph: any, proxyUrl: string, authToken: string) {
+    async updateLibrisHolding(holding: any, graph: any, writer: LibrisWriter) {
         const response = await this.http.put<any>(
-            this.holdingProxyUrl(holding, proxyUrl), graph,
-            { headers: this.writeHeaders(holding, authToken, 'application/ld+json'), observe: 'response' }
+            this.holdingWriteUrl(holding, writer), graph,
+            { headers: this.writeHeaders(holding, writer, 'application/ld+json'), observe: 'response' }
         ).toPromise();
         return { graph: graph, etag: response.headers.get('ETag') };
     }
@@ -561,10 +575,10 @@ export class LibrisService {
     /**
      * Tar bort ett bestånd i Libris via proxy (DELETE).
      */
-    async deleteLibrisHolding(holding: any, proxyUrl: string, authToken: string) {
+    async deleteLibrisHolding(holding: any, writer: LibrisWriter) {
         return this.http.delete<any>(
-            this.holdingProxyUrl(holding, proxyUrl),
-            { headers: this.writeHeaders(holding, authToken) }
+            this.holdingWriteUrl(holding, writer),
+            { headers: this.writeHeaders(holding, writer) }
         ).toPromise();
     }
 }

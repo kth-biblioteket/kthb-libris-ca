@@ -127,6 +127,13 @@
         "fields_help": "Välj vilka delfält som visas på raderna i kortet och vilka som finns i formulären Lägg till och Redigera. Standard är $c, $h, $j, $l, $t och $i. Upprepade fält redigeras med | mellan värdena. Fält som inte finns i formuläret ändras aldrig i Libris.",
         "fields_name": "Namn / egenskap i Libris",
         "fields_display": "Visas i kortet",
-        "fields_form": "I formulär"
+        "fields_form": "I formulär",
+        "login_button": "Logga in i Libris",
+        "login_status": "Inloggad i Libris",
+        "login_logout": "Logga ut",
+        "login_ok": "Inloggad i Libris",
+        "login_expired": "Din Libris-inloggning har gått ut. Logga in igen och försök på nytt.",
+        "login_forbidden": "Ditt Libris-konto saknar behörighet att ändra bestånd för det här sigelet.",
+        "login_failed": "Inloggningen i Libris misslyckades"
     }
 }

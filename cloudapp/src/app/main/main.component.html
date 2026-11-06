@@ -1,6 +1,17 @@
 <div class="topbar">
 <p>
     <a (click)="setLang('en')">English</a> | <a (click)="setLang('sv')">Svenska</a>
+    <ng-container *ngIf="config?.loginUrl && config?.clientId">
+        <button mat-stroked-button class="history-button" *ngIf="!auth.isLoggedIn()" (click)="librisLogin()">
+            <mat-icon>login</mat-icon> {{ 'Translate.login_button' | translate }}
+        </button>
+        <span class="login-badge" *ngIf="auth.isLoggedIn()">
+            <mat-icon>verified_user</mat-icon>
+            <b>{{ 'Translate.login_status' | translate }}</b>
+            <span class="login-time">{{auth.minutesLeft()}} min</span>
+            <a (click)="auth.logoutEverywhere(config.loginUrl)">{{ 'Translate.login_logout' | translate }}</a>
+        </span>
+    </ng-container>
     <button mat-stroked-button class="history-button" *ngIf="deletedEntries.length > 0"
         (click)="showHistory = !showHistory">
         <mat-icon>history</mat-icon> {{ 'Translate.history_title' | translate }} ({{deletedEntries.length}})
@@ -21,7 +32,7 @@
             <div class="history-actions">
                 <button mat-icon-button (click)="copyMms(entry.mmsId)" [title]="'Translate.history_copy' | translate"><mat-icon>content_copy</mat-icon></button>
                 <button mat-icon-button (click)="showPostByMms(entry.mmsId); showHistory = false" [title]="'Translate.history_show' | translate"><mat-icon>visibility</mat-icon></button>
-                <button mat-icon-button *ngIf="entry.hasUndo && config?.proxyUrl" (click)="openUndo(entry)" [title]="'Translate.undo_button' | translate"><mat-icon>undo</mat-icon></button>
+                <button mat-icon-button *ngIf="entry.hasUndo && canWrite()" (click)="openUndo(entry)" [title]="'Translate.undo_button' | translate"><mat-icon>undo</mat-icon></button>
                 <button mat-icon-button (click)="removeEntry(entry.id)" [title]="'Translate.history_remove' | translate"><mat-icon>close</mat-icon></button>
             </div>
         </div>
@@ -100,7 +111,7 @@
                                             </div>
                                         </div>
                                         <div class="holding-row-actions"
-                                            *ngIf="config?.proxyUrl && librisholding.holdingurl">
+                                            *ngIf="canWrite() && librisholding.holdingurl">
                                             <button mat-icon-button
                                                 (click)="editHolding(pageitem, librisholding, getLibraryName(librisholding.sigel), i)"
                                                 [title]="'Translate.holding_editrow' | translate">
@@ -116,7 +127,7 @@
                                 </div>
                                 <ng-template #elseBlock>Det finns ett tomt bestånd i Libris</ng-template>
                             </div>
-                            <div class="holding-buttons" *ngIf="config?.proxyUrl && librisholding.holdingurl">
+                            <div class="holding-buttons" *ngIf="canWrite() && librisholding.holdingurl">
                                 <button mat-stroked-button
                                     (click)="addHoldingRow(librisholding, getLibraryName(librisholding.sigel))">
                                     <mat-icon>add</mat-icon> {{ 'Translate.holding_add' | translate }}
@@ -144,7 +155,7 @@
                     <i class="material-icons md-30 icon-red">error</i> {{pageitem.librisitem.errormessage}}
                 </mat-card-content>
                 <mat-card-content
-                    *ngIf="config?.proxyUrl && pageitem.librisitem.librisinstance && pageitem.librisitem.instanceid && getCreateOptions(pageitem).length > 0">
+                    *ngIf="canWrite() && pageitem.librisitem.librisinstance && pageitem.librisitem.instanceid && getCreateOptions(pageitem).length > 0">
                     <div class="no-holding-row" *ngFor="let option of getCreateOptions(pageitem)">
                         <span><b>{{option.libraryname}} ({{option.sigel}})</b> – {{ 'Translate.holding_noholding' | translate }}</span>
                         <button mat-stroked-button (click)="createHolding(pageitem, option.sigel)">

@@ -1,7 +1,8 @@
 import { Component, Inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { TranslateService } from '@ngx-translate/core';
-import { LibrisService } from '../../libris.service';
+import { LibrisService, LibrisWriter } from '../../libris.service';
+import { LibrisAuthService } from '../../libris-auth.service';
 import { AlmaService, AlmaRestoreResult } from '../../alma.service';
 import { DeletedEntry } from '../../history.service';
 
@@ -17,8 +18,7 @@ export class UndoDialogComponent {
 
   entry: DeletedEntry;
   snapshot: any;
-  proxyUrl: string;
-  authToken: string;
+  writer: LibrisWriter;
 
   busy: boolean = false;
   error: string = '';
@@ -30,12 +30,12 @@ export class UndoDialogComponent {
     @Inject(MAT_DIALOG_DATA) public data: any,
     private librisservice: LibrisService,
     private alma: AlmaService,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private auth: LibrisAuthService
   ) {
     this.entry = data.entry;
     this.snapshot = data.snapshot;
-    this.proxyUrl = data.proxyUrl;
-    this.authToken = data.authToken;
+    this.writer = data.writer;
   }
 
   get libris() {
@@ -98,10 +98,10 @@ export class UndoDialogComponent {
     this.error = '';
     try {
       if (this.libris.kind === 'all') {
-        await this.librisservice.restoreLibrisHolding(this.libris.graph, this.libris.sigel, this.proxyUrl, this.authToken);
+        await this.librisservice.restoreLibrisHolding(this.libris.graph, this.libris.sigel, this.writer);
       } else {
         await this.librisservice.restoreLibrisRow(
-          this.libris.holdingurl, this.libris.sigel, this.libris.component, this.libris.index, this.proxyUrl, this.authToken);
+          this.libris.holdingurl, this.libris.sigel, this.libris.component, this.libris.index, this.writer);
       }
       this.done.libris = true;
     } catch (e) {
@@ -115,6 +115,13 @@ export class UndoDialogComponent {
   }
 
   private errorMessage(e: any) {
+    if (this.writer && this.writer.direct && e && e.status === 401) {
+      this.auth.logout();
+      return this.translate.instant('Translate.login_expired');
+    }
+    if (this.writer && this.writer.direct && e && e.status === 403) {
+      return this.translate.instant('Translate.login_forbidden');
+    }
     if (e && (e.status === 409 || e.status === 412)) {
       return this.translate.instant('Translate.holding_conflict');
     }
