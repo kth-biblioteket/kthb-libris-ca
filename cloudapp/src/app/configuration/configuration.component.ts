@@ -83,7 +83,10 @@ export class ConfigurationComponent implements OnInit {
     this.loading = true
     this.form = this.fb.group({
       proxyUrl: this.fb.control(''),
-      librisUrl: this.fb.control('')
+      librisUrl: this.fb.control(''),
+      loginUrl: this.fb.control(''),
+      clientId: this.fb.control(''),
+      redirectUri: this.fb.control('')
     });
     this.getConfiguration();
   }
@@ -99,6 +102,10 @@ export class ConfigurationComponent implements OnInit {
       this.configService.getAsFormGroup().subscribe( config => {
         if (Object.keys(config.value).length!=0) {
           this.form = config;
+          //Äldre sparad konfiguration saknar de nyare fälten
+          ['loginUrl', 'clientId', 'redirectUri'].forEach(k => {
+            if (!this.form.get(k)) { this.form.addControl(k, this.fb.control('')); }
+          });
           this.loading = false  
         }
       });
@@ -125,6 +132,9 @@ export class ConfigurationComponent implements OnInit {
     this.saving = true;
     this.configuration.proxyUrl = this.form.value.proxyUrl
     this.configuration.librisUrl = this.form.value.librisUrl
+    this.configuration.loginUrl = this.form.value.loginUrl
+    this.configuration.clientId = this.form.value.clientId
+    this.configuration.redirectUri = this.form.value.redirectUri
     this.configuration.displayFields = this.displayFields
     this.configuration.formFields = this.formFields
     this.configService.set(this.configuration).subscribe(
