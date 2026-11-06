@@ -39,10 +39,17 @@ export class LibrisAuthService {
   logoutEverywhere(loginUrl: string) {
     this.logout();
     if (!loginUrl) { return; }
-    const popup = window.open(loginUrl.replace(/\/+$/, '') + '/logout/', 'libislogout', 'width=480,height=400');
+    const popup = window.open(loginUrl.replace(/\/+$/, '') + '/logout/', 'librislogout', this.popupFeatures(480, 400));
     if (popup) {
       setTimeout(() => { try { popup.close(); } catch (e) { } }, 2500);
     }
+  }
+
+  /** Popup-egenskaper med fönstret centrerat över det fönster appen ligger i. */
+  private popupFeatures(width: number, height: number): string {
+    const left = Math.round(window.screenX + (window.outerWidth - width) / 2);
+    const top = Math.round(window.screenY + (window.outerHeight - height) / 2);
+    return 'width=' + width + ',height=' + height + ',left=' + left + ',top=' + top;
   }
 
   /** Måste anropas direkt från ett klick, annars blockeras popupen. */
@@ -54,7 +61,7 @@ export class LibrisAuthService {
       + '&scope=' + encodeURIComponent('read write')
       + '&redirect_uri=' + encodeURIComponent(redirectUri || this.defaultRedirectUri())
       + '&state=' + encodeURIComponent(state);
-    const popup = window.open(url, 'librislogin', 'width=520,height=700');
+    const popup = window.open(url, 'librislogin', this.popupFeatures(520, 700));
     if (!popup) {
       return Promise.reject(new Error('Popup blocked'));
     }
