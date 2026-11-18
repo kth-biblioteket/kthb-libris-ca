@@ -12,12 +12,22 @@
             <a (click)="auth.logoutEverywhere(config.loginUrl)">{{ 'Translate.login_logout' | translate }}</a>
         </span>
     </ng-container>
+    <button mat-stroked-button class="history-button" routerLink="/settings">
+        <mat-icon>person</mat-icon> {{ 'Translate.settings_button' | translate }}
+    </button>
     <button mat-stroked-button class="history-button" *ngIf="deletedEntries.length > 0"
         (click)="showHistory = !showHistory">
         <mat-icon>history</mat-icon> {{ 'Translate.history_title' | translate }} ({{deletedEntries.length}})
+        <mat-icon>{{ showHistory ? 'expand_less' : 'expand_more' }}</mat-icon>
     </button>
 </p>
 <div class="history" *ngIf="showHistory && deletedEntries.length > 0">
+    <div class="history-header">
+        <b>{{ 'Translate.history_title' | translate }}</b>
+        <button mat-stroked-button (click)="showHistory = false">
+            <mat-icon>close</mat-icon> {{ 'Translate.history_close' | translate }}
+        </button>
+    </div>
     <p class="history-hint">{{ 'Translate.history_hint' | translate }}</p>
         <div class="history-row" *ngFor="let entry of deletedEntries">
             <div class="history-text">
@@ -27,7 +37,7 @@
                 <span *ngIf="entry.kind == 'row'">{{ 'Translate.history_row' | translate }}: {{entry.rows}}</span>
                 <span *ngIf="entry.undone?.libris"> · {{ 'Translate.undo_undonelibris' | translate }}</span>
                 <span *ngIf="entry.undone?.alma"> · {{ 'Translate.undo_undonealma' | translate }}</span>
-                <span *ngIf="entry.alma"> · Alma: {{entry.alma.deleted}} {{ 'Translate.history_deleted' | translate }}<span *ngIf="entry.alma.failed > 0">, {{entry.alma.failed}} {{ 'Translate.history_notdeleted' | translate }}</span></span>
+                <span *ngIf="entry.alma"> · Alma: {{entry.alma.deleted}} {{ 'Translate.history_deleted' | translate }}<span *ngIf="entry.alma.failed > 0">, {{entry.alma.failed}} {{ 'Translate.history_notdeleted' | translate }}</span><span *ngIf="entry.alma.bib">, {{ 'Translate.history_bib' | translate }}</span></span>
             </div>
             <div class="history-actions">
                 <button mat-icon-button (click)="copyMms(entry.mmsId)" [title]="'Translate.history_copy' | translate"><mat-icon>content_copy</mat-icon></button>

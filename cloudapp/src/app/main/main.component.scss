@@ -240,3 +240,10 @@ mat-card {
   cursor: pointer;
   text-decoration: underline;
 }
+
+.history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}

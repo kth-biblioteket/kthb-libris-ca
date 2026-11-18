@@ -17,6 +17,7 @@ import { HoldingDialogComponent } from './holding-dialog/holding-dialog.componen
 import { AlmaDeleteDialogComponent } from './alma-delete-dialog/alma-delete-dialog.component';
 import { HistoryService, DeletedEntry } from '../history.service';
 import { DEFAULT_FIELDS, normalizeFields } from '../models/holding-fields';
+import { UserSettingsService } from '../user-settings.service';
 import { LibrisWriter } from '../libris.service';
 import { LibrisAuthService } from '../libris-auth.service';
 import { UndoDialogComponent } from './undo-dialog/undo-dialog.component';
@@ -72,6 +73,7 @@ export class MainComponent implements OnInit, OnDestroy {
     private alert: AlertService,
     private librisservice: LibrisService,
     public auth: LibrisAuthService,
+    private userSettings: UserSettingsService,
     private history: HistoryService,
     private dialog: MatDialog
     ) { } 
@@ -96,7 +98,10 @@ export class MainComponent implements OnInit, OnDestroy {
           this.config = conf;
           this.sigels = this.config.LibrisSigelTemplate;
           this.displayFields = normalizeFields(conf.displayFields);
+          //Användarens eget val av visade fält går före institutionens
+          this.userSettings.getFields('displayFields').subscribe(own => { if (own) { this.displayFields = own; } });
           this.librisservice.setFormFields(conf.formFields);
+          this.userSettings.getFields('formFields').subscribe(own => { if (own) { this.librisservice.setFormFields(own); } });
           this.pageLoad()
         }
       })
@@ -495,7 +500,7 @@ export class MainComponent implements OnInit, OnDestroy {
    * Frågar om samma borttagning ska göras i Alma, efter att den gjorts i Libris.
    * Hoppar över frågan om sigelet saknar Alma-bibliotek i konfigurationen eller posten saknar MMS ID.
    */
-  openAlmaDelete(pageitem: any, sigel: string, mode: 'all' | 'rows', rows: any[], entryId?: string) {
+  openAlmaDelete(pageitem: any, sigel: string, mode: 'all' | 'rows', rows: any[], entryId?: string, librisMessage?: string) {
     const template = (this.sigels || []).find(s => s.sigel === sigel);
     if (!template || !template.almalibrarycode || !pageitem.mms_id) {
       return;
@@ -508,17 +513,18 @@ export class MainComponent implements OnInit, OnDestroy {
         libraryName: this.getLibraryName(sigel),
         sigel: sigel,
         mode: mode,
-        rows: rows
+        rows: rows,
+        librisMessage: librisMessage
       }
     }).afterClosed().subscribe(async result => {
       //result = utfallet i Alma (om borttagningen kördes), sparas på posten i listan
       if (result && entryId) {
         this.deletedEntries = await this.history.update(entryId, {
-          alma: { deleted: result.deleted.length, failed: result.failed.length }
+          alma: { deleted: result.deleted.length, failed: result.failed.length, bib: !!(result.snapshot && result.snapshot.bib) }
         });
         //Kopia av det som togs bort i Alma, för att kunna ångra
         const snap = result.snapshot;
-        if (snap && (snap.holdings.length > 0 || snap.items.length > 0)) {
+        if (snap && (snap.holdings.length > 0 || snap.items.length > 0 || snap.bib)) {
           if (await this.history.mergeSnapshot(entryId, { alma: snap })) {
             this.deletedEntries = await this.history.update(entryId, { hasUndo: true });
           }
@@ -617,16 +623,26 @@ export class MainComponent implements OnInit, OnDestroy {
     this.dialog
       .open(UndoDialogComponent, {
         width: '480px',
+        autoFocus: false,   //annars får den första knappen (Ångra i Libris) fokus och ser annorlunda ut än de andra
         data: { entry: entry, snapshot: snapshot, writer: this.writer() }
       })
       .afterClosed()
       .subscribe(async done => {
-        if (done && (done.libris || done.alma)) {
+        if (done && (done.libris || done.alma || done.almaRetry)) {
+          //Den bibliografiska posten fick ett nytt MMS ID när den skapades på nytt
+          if (done.newMmsId) {
+            this.deletedEntries = await this.history.update(entry.id, { mmsId: done.newMmsId });
+            entry = { ...entry, mmsId: done.newMmsId };
+          }
+          //Något återstod i Alma: spara bara det som saknas, så att ångra kan göras igen för resten
+          if (done.almaRetry) {
+            await this.history.mergeSnapshot(entry.id, { alma: done.almaRetry });
+          }
           this.deletedEntries = await this.history.update(entry.id, {
-            undone: { ...(entry.undone || {}), ...(done.libris ? { libris: true } : {}), ...(done.alma ? { alma: true } : {}) }
+            undone: { ...(entry.undone || {}), ...(done.libris ? { libris: true } : {}), ...(done.almaComplete ? { alma: true } : {}) }
           });
           if (done.libris) { this.alert.success(this.translate.instant('Translate.undo_done')); }
-          if (done.alma) { this.alert.success(this.translate.instant('Translate.undo_donealma')); }
+          if (done.almaComplete) { this.alert.success(this.translate.instant('Translate.undo_donealma')); }
           this.reloadAfterUndo(entry.mmsId);
         }
       });
@@ -681,7 +697,7 @@ export class MainComponent implements OnInit, OnDestroy {
             }
           };
           const entryId = await this.recordDeletion(pageitem, holding, 'row', this.rowText(removedRow), snapshot);
-          this.openAlmaDelete(pageitem, holding.sigel, 'rows', [removedRow], entryId);
+          this.openAlmaDelete(pageitem, holding.sigel, 'rows', [removedRow], entryId, this.translate.instant('Translate.holding_rowdeleted'));
         }
       });
   }
@@ -706,7 +722,7 @@ export class MainComponent implements OnInit, OnDestroy {
           this.alert.success(this.translate.instant('Translate.holding_deleted'));
           const snapshot = { libris: { kind: 'all', sigel: holding.sigel, graph: holding.holdinggraph } };
           const entryId = await this.recordDeletion(pageitem, holding, 'all', String(holding.marc_852.length), snapshot);
-          this.openAlmaDelete(pageitem, holding.sigel, 'all', holding.marc_852, entryId);
+          this.openAlmaDelete(pageitem, holding.sigel, 'all', holding.marc_852, entryId, this.translate.instant('Translate.holding_deleted'));
         }
       });
   }
