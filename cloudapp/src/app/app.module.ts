@@ -13,6 +13,7 @@ import { TopmenuComponent } from './topmenu/topmenu.component';
 import { ConfigurationComponent } from './configuration/configuration.component';
 import { ErrorComponent } from './static/error.component';
 import { ConfigurationDialogComponent } from './configuration/configuration-dialog/configuration-dialog.component';
+import { SettingsComponent } from './settings/settings.component';
 import { HelpComponent } from './help/help.component';
 import { HoldingDialogComponent } from './main/holding-dialog/holding-dialog.component';
 import { AlmaDeleteDialogComponent } from './main/alma-delete-dialog/alma-delete-dialog.component';
@@ -31,6 +32,7 @@ import { UndoDialogComponent } from './main/undo-dialog/undo-dialog.component';
     ErrorComponent,
     ConfigurationDialogComponent,
     HelpComponent,
+    SettingsComponent,
     HoldingDialogComponent,
     AlmaDeleteDialogComponent,
     UndoDialogComponent

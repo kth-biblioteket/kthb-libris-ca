@@ -1,0 +1,38 @@
+<mat-card>
+  <mat-card-content>
+    <app-topmenu></app-topmenu>
+    <div *ngIf="loading">
+      <mat-progress-spinner mode="indeterminate" diameter="50"></mat-progress-spinner>
+    </div>
+  </mat-card-content>
+</mat-card>
+
+<mat-card *ngIf="!loading">
+  <mat-card-content>
+    <div style="display: flex; justify-content: space-between; align-items: center">
+      <h3 class="subheading-1" style="margin: 0">{{ 'Translate.settings_title' | translate }}</h3>
+      <span *ngIf="personal" style="font-size: 11px; padding: 1px 8px; border-radius: 8px; background: #e3f4e5; color: #1b5e20">{{ 'Translate.settings_active' | translate }}</span>
+    </div>
+    <p style="font-size: 12px">{{ 'Translate.settings_help' | translate }}</p>
+    <table style="width: 100%; font-size: 12px; border-collapse: collapse">
+      <tr style="text-align: left">
+        <th>852</th>
+        <th>{{ 'Translate.fields_name' | translate }}</th>
+        <th style="text-align: center">{{ 'Translate.fields_display' | translate }}</th>
+        <th style="text-align: center">{{ 'Translate.fields_form' | translate }}</th>
+      </tr>
+      <tr *ngFor="let f of holdingFields" style="border-top: 0.5px solid #ccc">
+        <td style="padding: 4px 0"><b>${{f.code}}</b></td>
+        <td>{{ 'Translate.field_' + f.code | translate }}<br><span style="color: #777">{{f.property}}</span></td>
+        <td style="text-align: center"><input type="checkbox" [checked]="isChecked('displayFields', f.code)"
+            (change)="toggle('displayFields', f.code, $any($event.target).checked)"></td>
+        <td style="text-align: center"><input type="checkbox" [checked]="isChecked('formFields', f.code)"
+            (change)="toggle('formFields', f.code, $any($event.target).checked)"></td>
+      </tr>
+    </table>
+    <div class="eca-actions" style="margin-top: 12px">
+      <button mat-flat-button color="primary" type="button" (click)="save()" [disabled]="saving">{{ 'Translate.settings_save' | translate }}</button>
+      <button mat-stroked-button type="button" (click)="useInstitution()" [disabled]="saving || !personal">{{ 'Translate.settings_reset' | translate }}</button>
+    </div>
+  </mat-card-content>
+</mat-card>
