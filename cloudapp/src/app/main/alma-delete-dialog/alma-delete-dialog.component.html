@@ -1,8 +1,12 @@
 <h2 mat-dialog-title>{{ 'Translate.alma_title' | translate }} – {{libraryName}} ({{sigel}})</h2>
 
 <mat-dialog-content>
+  <p *ngIf="librisMessage" style="display: flex; align-items: center; gap: 6px; color: #2e7d32; font-weight: 500; margin: 0 0 10px"><mat-icon>check_circle</mat-icon> {{librisMessage}}</p>
   <p *ngIf="loading">{{ 'Translate.alma_loading' | translate }}</p>
   <p *ngIf="error" class="icon-red">{{error}}</p>
+  <div *ngIf="busy && !result" style="display: flex; align-items: center; gap: 8px; margin: 6px 0; font-size: 13px">
+    <mat-progress-spinner mode="indeterminate" diameter="18"></mat-progress-spinner><span>{{ 'Translate.alma_working' | translate }}</span>
+  </div>
 
   <p *ngIf="hasNothing">{{ 'Translate.alma_nothing' | translate }}</p>
 
@@ -35,14 +39,30 @@
 
   <div *ngIf="result">
     <div *ngIf="result.deleted.length > 0">
-      <p style="font-weight: 500">{{ 'Translate.alma_deleted' | translate }}</p>
+      <p style="display: flex; align-items: center; gap: 6px; color: #2e7d32; font-weight: 500; margin: 6px 0"><mat-icon>check_circle</mat-icon> {{ 'Translate.alma_deleted' | translate }}: {{result.deleted.length}}</p>
       <div *ngFor="let line of result.deleted" style="font-size: 13px">{{line}}</div>
     </div>
     <div *ngIf="result.failed.length > 0">
-      <p style="font-weight: 500" class="icon-red">{{ 'Translate.alma_failed' | translate }}</p>
+      <p style="display: flex; align-items: center; gap: 6px; font-weight: 500; margin: 6px 0" class="icon-red"><mat-icon>error</mat-icon> {{ 'Translate.alma_failed' | translate }}: {{result.failed.length}}</p>
       <div *ngFor="let f of result.failed" style="font-size: 13px"><b>{{f.label}}</b>: {{f.message}}</div>
     </div>
   </div>
+
+  <div *ngIf="offerBib" style="border: 1px solid #ef6c00; border-radius: 6px; padding: 8px 10px; margin-top: 10px; background: rgba(239, 108, 0, 0.08)">
+    <p style="font-weight: 500; margin: 0 0 4px">{{ 'Translate.alma_bib_title' | translate }}</p>
+    <p style="font-size: 13px; margin: 0 0 4px">{{ 'Translate.alma_bib_text' | translate }}</p>
+    <p style="font-size: 12px; margin: 0 0 8px">{{bibRecord?.title}} (MMS ID {{mmsId}})</p>
+    <p style="font-size: 12px; margin: 0 0 8px">{{ 'Translate.alma_bib_warning' | translate }}</p>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px">
+      <button mat-stroked-button (click)="keepBib()" [disabled]="busy">{{ 'Translate.alma_bib_keep' | translate }}</button>
+      <button mat-flat-button color="warn" (click)="removeBib()" [disabled]="busy">{{ 'Translate.alma_bib_delete' | translate }}</button>
+    </div>
+  </div>
+  <div *ngIf="busy && result && offerBib" style="display: flex; align-items: center; gap: 8px; margin: 6px 0; font-size: 13px">
+    <mat-progress-spinner mode="indeterminate" diameter="18"></mat-progress-spinner><span>{{ 'Translate.alma_bib_working' | translate }}</span>
+  </div>
+  <p *ngIf="bibDeleted" style="display: flex; align-items: center; gap: 6px; color: #2e7d32; font-weight: 500; margin: 10px 0 0"><mat-icon>check_circle</mat-icon> {{ 'Translate.alma_bib_deleted' | translate }}</p>
+  <p *ngIf="bibError" style="display: flex; align-items: center; gap: 6px; margin: 10px 0 0" class="icon-red"><mat-icon>error</mat-icon> {{bibError}}</p>
 </mat-dialog-content>
 
 <mat-dialog-actions>

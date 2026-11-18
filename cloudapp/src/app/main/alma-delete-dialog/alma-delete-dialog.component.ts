@@ -21,6 +21,7 @@ export class AlmaDeleteDialogComponent implements OnInit {
   sigel: string;
   mode: 'all' | 'rows';
   rows: any[];
+  librisMessage: string;
 
   loading: boolean = true;
   busy: boolean = false;
@@ -29,6 +30,12 @@ export class AlmaDeleteDialogComponent implements OnInit {
   selected: { [pid: string]: boolean } = {};
   matched: AlmaItem[] = [];
   result: AlmaDeleteResult = null;
+
+  //Den bibliografiska posten: erbjuds när inga holdings eller exemplar finns kvar på posten
+  bibRecord: { mmsId: string, title: string, record: any } = null;
+  offerBib: boolean = false;
+  bibDeleted: boolean = false;
+  bibError: string = '';
 
   constructor(
     public dialogRef: MatDialogRef<AlmaDeleteDialogComponent>,
@@ -43,6 +50,12 @@ export class AlmaDeleteDialogComponent implements OnInit {
     this.sigel = data.sigel;
     this.mode = data.mode;
     this.rows = data.rows || [];
+    this.librisMessage = data.librisMessage || '';
+    //Stängs dialogen med Esc eller genom klick utanför ska utfallet ändå följa med, annars sparas ingen kopia för att ångra i Alma
+    this.dialogRef.backdropClick().subscribe(() => this.dialogRef.close(this.result));
+    this.dialogRef.keydownEvents().subscribe(ev => {
+      if (ev.key === 'Escape') { this.dialogRef.close(this.result); }
+    });
   }
 
   async ngOnInit() {
@@ -98,8 +111,44 @@ export class AlmaDeleteDialogComponent implements OnInit {
       const result = await this.alma.executeDelete(plan);
       result.snapshot = this.alma.filterSnapshot(snapshot, result);
       this.result = result;
+      await this.checkBibOffer(result);
     } catch (e) {
       this.error = this.translate.instant('Translate.alma_deletefailed') + (e && e.message ? e.message : e);
+    }
+    this.busy = false;
+  }
+
+  /**
+   * Finns varken holdings eller exemplar kvar (för något bibliotek) erbjuds borttagning av den bibliografiska posten.
+   */
+  private async checkBibOffer(result: AlmaDeleteResult) {
+    if (result.failed.length > 0) { return; }
+    try {
+      if (await this.alma.countHoldings(this.mmsId) === 0) {
+        //Kopian hämtas innan frågan visas, så att borttagningen går att ångra
+        this.bibRecord = await this.alma.getBib(this.mmsId);
+        this.offerBib = true;
+      }
+    } catch (e) {
+      //Posten lämnas orörd, men användaren ska få veta att kontrollen inte gick
+      this.bibError = this.translate.instant('Translate.alma_bib_checkfailed') + this.alma.errorMessage(e);
+    }
+  }
+
+  keepBib() {
+    this.offerBib = false;
+  }
+
+  async removeBib() {
+    this.busy = true;
+    this.bibError = '';
+    try {
+      await this.alma.deleteBib(this.mmsId);
+      this.result.snapshot.bib = this.bibRecord;
+      this.bibDeleted = true;
+      this.offerBib = false;
+    } catch (e) {
+      this.bibError = this.translate.instant('Translate.alma_bib_failed') + ': ' + this.alma.errorMessage(e);
     }
     this.busy = false;
   }

@@ -68,6 +68,9 @@
     </div>
   </div>
 
+  <div *ngIf="busy" style="display: flex; align-items: center; gap: 8px; margin: 6px 0; font-size: 13px">
+    <mat-progress-spinner mode="indeterminate" diameter="18"></mat-progress-spinner><span>{{ 'Translate.holding_working' | translate }}</span>
+  </div>
   <p *ngIf="error" class="icon-red">{{error}}</p>
 </mat-dialog-content>
 

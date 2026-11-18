@@ -11,7 +11,7 @@ export interface DeletedEntry {
     libraryName: string;
     kind: 'all' | 'row';
     rows: string;          //t.ex. "h# 8f j# 6163" för en enskild rad, eller antal rader vid hela beståndet
-    alma?: { deleted: number, failed: number };
+    alma?: { deleted: number, failed: number, bib?: boolean };
     hasUndo?: boolean;                                   //fullständig information för att ångra finns sparad
     undone?: { libris?: boolean, alma?: boolean };      //vad som redan ångrats
 }

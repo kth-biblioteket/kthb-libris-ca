@@ -13,26 +13,53 @@
       <span *ngIf="row.l"><b>l#</b> {{row.l}} </span>
       <span *ngIf="row.t"><b>t#</b> {{row.t}} </span>
     </div>
-    <p *ngIf="librisAlreadyUndone || done.libris" style="color: #2e7d32">{{ 'Translate.undo_done' | translate }}</p>
+<p *ngIf="librisAlreadyUndone || done.libris" style="display: flex; align-items: center; gap: 6px; color: #2e7d32; font-weight: 500; margin: 6px 0"><mat-icon>check_circle</mat-icon> {{ 'Translate.undo_done' | translate }}</p>
+    <div *ngIf="working == 'libris'" style="display: flex; align-items: center; gap: 8px; margin: 6px 0; font-size: 13px">
+      <mat-progress-spinner mode="indeterminate" diameter="18"></mat-progress-spinner><span>{{ 'Translate.undo_working_libris' | translate }}</span>
+    </div>
+    <div style="margin: 8px 0 14px" *ngIf="!librisAlreadyUndone && !done.libris">
+      <button mat-flat-button color="primary" (click)="undoLibris()" [disabled]="busy">
+        {{ 'Translate.undo_dolibris' | translate }}
+      </button>
+    </div>
   </div>
   <div *ngIf="almaSnapshot">
     <p style="font-weight: 500">{{ 'Translate.undo_alma' | translate }}</p>
     <p style="font-size: 13px">{{ 'Translate.undo_almaintro' | translate }}</p>
+    <div *ngIf="almaSnapshot.bib" style="font-size: 12px; border-left: 2px solid #999; padding-left: 8px; margin-bottom: 4px">
+      {{bibLabel}}
+    </div>
+    <p *ngIf="almaSnapshot.bib" style="font-size: 12px; margin: 0 0 6px">{{ 'Translate.undo_bibnote' | translate }}</p>
     <div *ngFor="let h of almaSnapshot.holdings" style="font-size: 12px; border-left: 2px solid #999; padding-left: 8px; margin-bottom: 4px">
       {{h.label}}
     </div>
     <div *ngFor="let i of almaSnapshot.items" style="font-size: 12px; border-left: 2px solid #999; padding-left: 8px; margin-bottom: 4px">
       {{i.label}}
     </div>
-    <p *ngIf="almaAlreadyUndone" style="color: #2e7d32">{{ 'Translate.undo_donealma' | translate }}</p>
+<p *ngIf="almaAlreadyUndone" style="display: flex; align-items: center; gap: 6px; color: #2e7d32; font-weight: 500; margin: 6px 0"><mat-icon>check_circle</mat-icon> {{ 'Translate.undo_donealma' | translate }}</p>
+    <div *ngIf="working == 'alma'" style="display: flex; align-items: center; gap: 8px; margin: 6px 0; font-size: 13px">
+      <mat-progress-spinner mode="indeterminate" diameter="18"></mat-progress-spinner><span>{{ 'Translate.undo_working_alma' | translate }}</span>
+    </div>
     <div *ngIf="almaResult">
-      <div *ngIf="almaResult.created.length > 0" style="font-size: 13px; color: #2e7d32">
-        {{ 'Translate.undo_created' | translate }}: {{almaResult.created.length}}
+      <div *ngIf="almaResult.created.length > 0" style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: #2e7d32">
+        <mat-icon>check_circle</mat-icon> {{ 'Translate.undo_created' | translate }}: {{almaResult.created.length}}
       </div>
+      <div *ngFor="let n of almaResult.notes" style="font-size: 12px; color: #8a6d00">{{n}}</div>
       <div *ngIf="almaResult.failed.length > 0">
-        <p style="font-weight: 500" class="icon-red">{{ 'Translate.alma_failed' | translate }}</p>
+        <p style="display: flex; align-items: center; gap: 6px; font-weight: 500; margin: 6px 0" class="icon-red"><mat-icon>error</mat-icon> {{ 'Translate.undo_notcreated' | translate }}: {{almaResult.failed.length}}</p>
         <div *ngFor="let f of almaResult.failed" style="font-size: 13px"><b>{{f.label}}</b>: {{f.message}}</div>
       </div>
+    </div>
+    <div style="margin: 8px 0 14px">
+      <button mat-flat-button color="primary" *ngIf="!almaAlreadyUndone && !almaResult" (click)="undoAlma()" [disabled]="busy">
+        {{ 'Translate.undo_doalma' | translate }}
+      </button>
+      <button mat-flat-button color="primary" *ngIf="almaResult && almaResult.failed.length > 0 && almaResult.retry" (click)="retryAlma()" [disabled]="busy">
+        {{ 'Translate.undo_retry' | translate }}
+      </button>
+      <button mat-flat-button color="primary" *ngIf="done.alma" (click)="refreshAlma()">
+        {{ 'Translate.alma_refresh' | translate }}
+      </button>
     </div>
   </div>
   <p *ngIf="!libris && !almaSnapshot">{{ 'Translate.undo_nothing' | translate }}</p>
@@ -43,10 +70,4 @@
 
 <mat-dialog-actions>
   <button mat-button (click)="close()" [disabled]="busy">{{ 'Translate.alma_close' | translate }}</button>
-  <button mat-flat-button color="primary" *ngIf="libris && !librisAlreadyUndone && !done.libris" (click)="undoLibris()" [disabled]="busy">
-    {{ 'Translate.undo_dolibris' | translate }}
-  </button>
-  <button mat-flat-button color="primary" *ngIf="almaSnapshot && !almaAlreadyUndone && !almaResult" (click)="undoAlma()" [disabled]="busy">
-    {{ 'Translate.undo_doalma' | translate }}
-  </button>
 </mat-dialog-actions>

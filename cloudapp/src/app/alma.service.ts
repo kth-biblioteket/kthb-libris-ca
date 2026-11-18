@@ -49,9 +49,14 @@ export interface AlmaSnapshot {
     mmsId: string;
     holdings: { holding_id: string, label: string, record: any }[];
     items: { holding_id: string, pid: string, label: string, record: any }[];
+    //Den bibliografiska posten, om den också togs bort (skapas då på nytt med nytt MMS ID)
+    bib?: { mmsId: string, title: string, record: any };
 }
 
 export interface AlmaRestoreResult {
+    retry?: AlmaSnapshot;        //det som återstår att skapa om något misslyckades (för att försöka igen)
+    newMmsId?: string;           //nytt MMS ID om den bibliografiska posten skapades på nytt
+    notes?: string[];            //saker som ändrades för att posten skulle kunna skapas
     created: string[];
     failed: { label: string, message: string }[];
 }
@@ -195,6 +200,10 @@ export class AlmaService {
         return { mmsId: mmsId, items: selected, holdings: emptied };
     }
 
+    errorMessage(err: any): string {
+        return this.errorText(err);
+    }
+
     private errorText(err: any): string {
         const list = err && err.error && err.error.errorList && err.error.errorList.error;
         const first = Array.isArray(list) ? list[0] : list;
@@ -316,14 +325,30 @@ export class AlmaService {
      * Exemplar vars holdings-post inte togs bort läggs i den befintliga holdings-posten.
      */
     async restore(snapshot: AlmaSnapshot): Promise<AlmaRestoreResult> {
-        const result: AlmaRestoreResult = { created: [], failed: [] };
+        const result: AlmaRestoreResult = { created: [], failed: [], notes: [] };
         const idMap: { [oldId: string]: string } = {};
         const failedHoldings = new Set<string>();
+        const retryItems: AlmaSnapshot['items'] = [];
+        let mmsId = snapshot.mmsId;
+
+        //Den bibliografiska posten först: den får ett nytt MMS ID som de andra posterna ska hamna under
+        if (snapshot.bib) {
+            const label = this.bibLabel(snapshot.bib);
+            try {
+                mmsId = await this.restoreBib(snapshot.bib);
+                result.newMmsId = mmsId;
+                result.created.push(label);
+            } catch (err) {
+                result.failed.push({ label: label, message: this.errorText(err) });
+                result.retry = snapshot;
+                return result;
+            }
+        }
 
         for (const holding of snapshot.holdings) {
             try {
                 const created = await this.restService.call({
-                    url: `/bibs/${snapshot.mmsId}/holdings`,
+                    url: `/bibs/${mmsId}/holdings`,
                     method: HttpMethod.POST,
                     headers: { 'Content-Type': 'application/xml', 'Accept': 'application/json' },
                     requestBody: this.holdingXml(this.cleanHolding(holding.record))
@@ -339,19 +364,41 @@ export class AlmaService {
         for (const item of snapshot.items) {
             if (failedHoldings.has(item.holding_id)) {
                 result.failed.push({ label: item.label, message: 'Holdings-posten kunde inte skapas' });
+                retryItems.push(item);
                 continue;
             }
             const holdingId = idMap[item.holding_id] || item.holding_id;
+            const url = `/bibs/${mmsId}/holdings/${holdingId}/items`;
+            const body = this.cleanItem(item.record);
             try {
-                await this.restService.call({
-                    url: `/bibs/${snapshot.mmsId}/holdings/${holdingId}/items`,
-                    method: HttpMethod.POST,
-                    requestBody: this.cleanItem(item.record)
-                }).toPromise();
+                await this.restService.call({ url: url, method: HttpMethod.POST, requestBody: body }).toPromise();
                 result.created.push(item.label);
             } catch (err) {
+                //Ett värde i exemplarets policy som inte längre finns i Almas kodtabell: försök igen utan policy
+                //(Alma sätter då standardvärdet) och berätta det i resultatet.
+                const policy = body.item_data && body.item_data.policy && body.item_data.policy.value;
+                if (policy && /ItemPolicy|field policy/i.test(this.errorText(err))) {
+                    delete body.item_data.policy;
+                    try {
+                        await this.restService.call({ url: url, method: HttpMethod.POST, requestBody: body }).toPromise();
+                        result.created.push(item.label);
+                        result.notes.push(item.label + ': policy "' + policy + '" finns inte längre i Almas kodtabell och utelämnades (Alma satte standardvärde)');
+                        continue;
+                    } catch (err2) {
+                        err = err2;
+                    }
+                }
                 result.failed.push({ label: item.label, message: this.errorText(err) });
+                //Vid nytt försök läggs exemplaret i den holdings-post som nu redan har skapats
+                retryItems.push({ ...item, holding_id: holdingId });
             }
+        }
+        if (result.failed.length > 0) {
+            result.retry = {
+                mmsId: mmsId,
+                holdings: snapshot.holdings.filter(h => failedHoldings.has(h.holding_id)),
+                items: retryItems
+            };
         }
         return result;
     }
@@ -378,7 +425,7 @@ export class AlmaService {
         ).toPromise();
 
         for (const outcome of outcomes) {
-            const label = this.itemLabel(outcome.item);
+            const label = 'Item: ' + this.itemLabel(outcome.item);
             if (outcome.error) {
                 failedPids.add(outcome.item.pid);
                 result.failed.push({ label: label, message: this.errorText(outcome.error) });
@@ -406,6 +453,68 @@ export class AlmaService {
             }
         }
         return result;
+    }
+
+    /**
+     * Antal holdings-poster som finns kvar på bib-posten, för alla bibliotek.
+     */
+    async countHoldings(mmsId: string): Promise<number> {
+        const res = await this.restService.call({ url: `/bibs/${mmsId}/holdings`, queryParams: { limit: 1 } }).toPromise();
+        return Number(res && res.total_record_count) || 0;
+    }
+
+    /**
+     * Hämtar den bibliografiska posten (med MARC) som kopia innan den tas bort.
+     */
+    async getBib(mmsId: string): Promise<{ mmsId: string, title: string, record: any }> {
+        const record = await this.restService.call({ url: `/bibs/${mmsId}`, queryParams: { view: 'full', expand: 'None' } }).toPromise();
+        return { mmsId: mmsId, title: (record && record.title) || '', record: record };
+    }
+
+    /**
+     * Tar bort den bibliografiska posten. Alma nekar om något fortfarande hänger på den (beställningar, e-bestånd med mera).
+     */
+    async deleteBib(mmsId: string): Promise<void> {
+        await this.restService.call({ url: `/bibs/${mmsId}`, method: HttpMethod.DELETE }).toPromise();
+    }
+
+    bibLabel(bib: { mmsId: string, title: string }): string {
+        return 'Bib: ' + [bib.title, '(MMS ID ' + bib.mmsId + ')'].filter(p => p).join(' ');
+    }
+
+    //Bib-posten skickas som XML, med MARC-posten från kopian (001 är Almas id för den gamla posten)
+    private bibXml(record: any): string {
+        const anies = this.asArray(record && record.anies).filter(a => typeof a === 'string');
+        if (anies.length === 0) {
+            throw new Error('Bib-kopian saknar MARC-post (fält: ' + Object.keys(record || {}).join(', ') + ')');
+        }
+        const marcXml = anies.join('')
+            .replace(/<\?xml[^>]*\?>/g, '')
+            .replace(/<controlfield\s+tag="001"[^>]*\/>/g, '')
+            .replace(/<controlfield\s+tag="001"[^>]*>[^<]*<\/controlfield>/g, '')
+            .trim();
+        const suppress = record.suppress_from_publishing === 'true' || record.suppress_from_publishing === true;
+        return '<bib><suppress_from_publishing>' + (suppress ? 'true' : 'false') + '</suppress_from_publishing>' + marcXml + '</bib>';
+    }
+
+    /**
+     * Skapar den bibliografiska posten på nytt. Returnerar det nya MMS ID:t.
+     */
+    async restoreBib(bib: { record: any }): Promise<string> {
+        const created = await this.restService.call({
+            url: '/bibs',
+            method: HttpMethod.POST,
+            headers: { 'Content-Type': 'application/xml', 'Accept': 'application/json' },
+            requestBody: this.bibXml(bib.record)
+        }).toPromise();
+        if (created && typeof created === 'object' && created.mms_id) {
+            return String(created.mms_id);
+        }
+        const match = /<mms_id>\s*(\d+)\s*<\/mms_id>/.exec(typeof created === 'string' ? created : JSON.stringify(created || ''));
+        if (!match) {
+            throw new Error('Alma svarade utan ett nytt MMS ID');
+        }
+        return match[1];
     }
 
     itemLabel(item: AlmaItem): string {
