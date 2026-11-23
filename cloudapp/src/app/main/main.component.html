@@ -12,9 +12,6 @@
             <a (click)="auth.logoutEverywhere(config.loginUrl)">{{ 'Translate.login_logout' | translate }}</a>
         </span>
     </ng-container>
-    <button mat-stroked-button class="history-button" routerLink="/settings">
-        <mat-icon>person</mat-icon> {{ 'Translate.settings_button' | translate }}
-    </button>
     <button mat-stroked-button class="history-button" *ngIf="deletedEntries.length > 0"
         (click)="showHistory = !showHistory">
         <mat-icon>history</mat-icon> {{ 'Translate.history_title' | translate }} ({{deletedEntries.length}})
